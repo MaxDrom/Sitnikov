@@ -56,22 +56,22 @@ public class VkCommandBuffer
             {
                 fixed (Silk.NET.Vulkan.Semaphore* pSignalSemaphores = signalTmp)
                 {
-                        var pb = _buffer;
-                        SubmitInfo submitInfo = new()
-                        {
-                            SType = StructureType.SubmitInfo,
-                            WaitSemaphoreCount = (uint)tmp.Length,
-                            PWaitSemaphores = pSemaphores,
-                            PWaitDstStageMask = pwaitStageMask,
-                            SignalSemaphoreCount = (uint)signalTmp.Length,
-                            PSignalSemaphores = pSignalSemaphores,
-                            CommandBufferCount = 1,
-                            PCommandBuffers = &pb
-                        };
+                    var pb = _buffer;
+                    SubmitInfo submitInfo = new()
+                    {
+                        SType = StructureType.SubmitInfo,
+                        WaitSemaphoreCount = (uint)tmp.Length,
+                        PWaitSemaphores = pSemaphores,
+                        PWaitDstStageMask = pwaitStageMask,
+                        SignalSemaphoreCount = (uint)signalTmp.Length,
+                        PSignalSemaphores = pSignalSemaphores,
+                        CommandBufferCount = 1,
+                        PCommandBuffers = &pb
+                    };
 
-                        if (_ctx.Api.QueueSubmit(queue, 1u, ref submitInfo, fence.InternalFence) != Result.Success)
-                            throw new Exception("Failed to submit buffer");
-                    
+                    if (_ctx.Api.QueueSubmit(queue, 1u, ref submitInfo, fence.InternalFence) != Result.Success)
+                        throw new Exception("Failed to submit buffer");
+
                 }
             }
         }
@@ -123,17 +123,17 @@ public class VkCommandBuffer
             unsafe
             {
                 var tmp = stackalloc Buffer[buffers.Length];
-                for(var i = 0; i< buffers.Length; i++)
+                for (var i = 0; i < buffers.Length; i++)
                     tmp[i] = buffers[i].Buffer;
 
                 var tmp2 = stackalloc ulong[offsets.Length];
-                for(var i = 0; i< offsets.Length; i++)
+                for (var i = 0; i < offsets.Length; i++)
                     tmp2[i] = offsets[i];
-                _ctx.Api.CmdBindVertexBuffers(_buffer.InternalBuffer, (uint)firstBinding, (uint)buffers.Length, tmp,tmp2);
+                _ctx.Api.CmdBindVertexBuffers(_buffer.InternalBuffer, (uint)firstBinding, (uint)buffers.Length, tmp, tmp2);
             }
         }
 
-    
+
 
         public void BindIndexBuffer(VkBuffer buffer, ulong offset, IndexType indexType)
         {
@@ -203,9 +203,21 @@ public class VkCommandBuffer
 
         public void SetBlendConstant(ReadOnlySpan<float> constants)
         {
-            
+
             _ctx.Api.CmdSetBlendConstants(_buffer.InternalBuffer, constants);
         }
+
+        public void SetBlendConstant(float[] constants)
+        {
+            unsafe
+            {
+                fixed (float* tmp = constants)
+                {
+                    _ctx.Api.CmdSetBlendConstants(_buffer.InternalBuffer, tmp);
+                }
+            }
+        }
+
         public void SetViewport(ref Viewport viewport)
         {
             _ctx.Api.CmdSetViewport(_buffer.InternalBuffer, 0, 1, ref viewport);

@@ -32,25 +32,25 @@ public partial class GameWindow
     [
         new()
         {
-            position = new Vector2D<float>(-0.002f, -0.002f),
+            position = new Vector2D<float>(-0.001f, -0.001f),
             color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
         },
 
         new()
         {
-            position = new Vector2D<float>(0.002f, -0.002f),
+            position = new Vector2D<float>(0.001f, -0.001f),
             color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
         },
 
         new()
         {
-            position = new Vector2D<float>(0.002f, 0.002f),
+            position = new Vector2D<float>(0.001f, 0.001f),
             color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
         },
 
         new()
         {
-            position = new Vector2D<float>(-0.002f, 0.002f),
+            position = new Vector2D<float>(-0.001f, 0.001f),
             color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
         },
     ];
@@ -88,8 +88,8 @@ public partial class GameWindow
     {
         window.Run();
     }
-    float[] blendFactors = [0.0f, 0.0f, 0.0f, 0.0f];
-    float[] blendFactor2 = [1.0f, 1.0f, 1.0f, 1.0f];
+    float[] blendFactors = GC.AllocateArray<float>(4, true);// [0.0f, 0.0f, 0.0f, 0.0f];
+    float[] blendFactor2 = GC.AllocateArray<float>(4, true);
     void RecordBuffer(VkCommandBuffer buffer, int imageIndex)
     {
         Viewport viewport = new()
@@ -106,19 +106,21 @@ public partial class GameWindow
 
             using (var renderRecording = recording.BeginRenderPass(renderPass, framebuffers[imageIndex], scissor))
             {
+
                 recording.BindPipline(graphicsPipeline);
+
                 recording.BindVertexBuffers(0, [quadVertexBuffer, quadInstanceBuffer], [0, 0]);
                 recording.BindIndexBuffer(indexBuffer, 0, IndexType.Uint32);
                 renderRecording.SetViewport(ref viewport);
                 renderRecording.SetScissor(ref scissor);
-                renderRecording.SetBlendConstant(new ReadOnlySpan<float>(blendFactors));
+                renderRecording.SetBlendConstant(blendFactors);
                 renderRecording.DrawIndexed((uint)indices.Length, (uint)instances1.Length, 0, 0);
 
                 recording.BindVertexBuffers(0, [vertexBuffer, instanceBuffer], [0, 0]);
                 recording.BindIndexBuffer(indexBuffer, 0, IndexType.Uint32);
                 renderRecording.SetViewport(ref viewport);
                 renderRecording.SetScissor(ref scissor);
-                renderRecording.SetBlendConstant(new ReadOnlySpan<float>(blendFactor2));
+                renderRecording.SetBlendConstant(blendFactor2);
                 renderRecording.DrawIndexed((uint)indices.Length, (uint)instances.Length, 0, 0);
             }
         }
@@ -167,8 +169,10 @@ public partial class GameWindow
         }
         for (var i = 0; i < 4; i++)
         {
-            blendFactors[i] = (float)Math.Exp(-200 * frametime);
+            blendFactors[i] = (float)Math.Exp(-300 * frametime);
+            blendFactor2[i] = 1f;
         }
+        
         var taskList = new List<Task<Instance>>();
         for (var i = 0; i < instances.Length; i++)
         {

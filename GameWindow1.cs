@@ -261,7 +261,7 @@ public partial class GameWindow : IDisposable
             Dictionary<PresentModeKHR, int> desired = new();
             desired[PresentModeKHR.MailboxKhr] = 10;
             desired[PresentModeKHR.ImmediateKhr] = 5;
-            desired[PresentModeKHR.FifoKhr] = 20;
+            desired[PresentModeKHR.FifoKhr] = 1;
             for (var i = 0; i < n; i++)
             {
                 if (desired.TryGetValue(presentModes[i], out var ss) && ss > score)
@@ -270,9 +270,9 @@ public partial class GameWindow : IDisposable
                     score = ss;
                 }
             }
-
-            swapchain = new VkSwapchain(ctx, ctx.Surface, swapchainCtx, [device.PresentFamilyIndex, device.GraphicsFamilyIndex], 5,
-                                    Format.B8G8R8A8Srgb,
+            ctx.SurfaceApi.GetPhysicalDeviceSurfaceCapabilities(device.PhysicalDevice, ctx.Surface,out var capabilities);
+            swapchain = new VkSwapchain(ctx, ctx.Surface, swapchainCtx, [device.PresentFamilyIndex, device.GraphicsFamilyIndex], capabilities.MinImageCount + 1,
+                                    Format.R8G8B8A8Srgb,
                                     ColorSpaceKHR.SpaceSrgbNonlinearKhr,
                                     new Extent2D((uint)windowOptions.Size.X, (uint)windowOptions.Size.Y),
                                     presentMode);
