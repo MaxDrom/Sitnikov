@@ -34,7 +34,8 @@ public partial class GameWindow : IDisposable
     VkCommandPool commandPool;
     VkGraphicsPipeline graphicsPipeline;
     VkBuffer staggingVertex;
-
+    VkTexture textureBuffer;
+    VkImageView textureBufferView;
     protected virtual void Dispose(bool disposing)
     {
         if (!disposedValue)
@@ -55,13 +56,14 @@ public partial class GameWindow : IDisposable
                     sem.Dispose();
 
                 quadVertexBuffer.Dispose();
-                // quadInstanceBuffer.Dispose();
                 instanceBuffer.Dispose();
                 copyFinishedSemaphore.Dispose();
                 staggingVertex?.Dispose();
                 graphicsPipeline.Dispose();
                 commandPool.Dispose();
                 vertexBuffer.Dispose();
+                textureBufferView.Dispose();
+                textureBuffer.Dispose();
                 allocator.Dispose();
                 staggingAllocator.Dispose();
                 renderPass.Dispose();
@@ -88,7 +90,7 @@ public partial class GameWindow : IDisposable
         this.integrator = integrator;
         this.windowOptions = windowOptions;
         window = Window.Create(windowOptions);
-        var grid = 50;
+        var grid = 80;
         instances = new Instance[grid * grid+1];
         for (var xx = 0; xx < grid; xx++)
         {
@@ -132,13 +134,17 @@ public partial class GameWindow : IDisposable
         device = new VkDevice(ctx, physicalDevice, [], [KhrSwapchain.ExtensionName]);
         swapchainCtx = new VkSwapchainContext(ctx, device);
         CreateSwapchain();
-        CreateViews();
+        
         staggingAllocator = new StupidAllocator(ctx, device,
                                             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
                                             MemoryHeapFlags.DeviceLocalBit);
         allocator = new StupidAllocator(ctx, device, MemoryPropertyFlags.None, MemoryHeapFlags.DeviceLocalBit);
+        
+        
+
+        CreateViews();
         vertexBuffer = new VkBuffer((ulong)vertices.Length * ((ulong)Marshal.SizeOf<Vertex>()), BufferUsageFlags.VertexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
-        indexBuffer = new VkBuffer((ulong)indices.Length * sizeof(uint), BufferUsageFlags.IndexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
+        indexBuffer = new VkBuffer((ulong)indices.Length * sizeof(uint), BufferUsageFlags.IndexBufferBit | BufferUsageFlags.TransferDstBit , SharingMode.Exclusive, allocator);
         var subpass1 = new VkSubpassInfo(PipelineBindPoint.Graphics, [
                     new AttachmentReference()
             {
@@ -156,7 +162,7 @@ public partial class GameWindow : IDisposable
             StencilLoadOp = AttachmentLoadOp.DontCare,
             StencilStoreOp = AttachmentStoreOp.DontCare,
             InitialLayout = ImageLayout.Undefined,
-            FinalLayout = ImageLayout.PresentSrcKhr
+            FinalLayout = ImageLayout.TransferSrcOptimal
         };
 
         var dependency = new SubpassDependency()
@@ -251,6 +257,7 @@ public partial class GameWindow : IDisposable
             framebuffer.Dispose();
 
         swapchain.Dispose();
+        textureBuffer.Dispose();
     }
 
     void CreateSwapchain()
@@ -267,7 +274,7 @@ public partial class GameWindow : IDisposable
             Dictionary<PresentModeKHR, int> desired = new();
             desired[PresentModeKHR.MailboxKhr] = 10;
             desired[PresentModeKHR.ImmediateKhr] = 5;
-            desired[PresentModeKHR.FifoKhr] = 1;
+            desired[PresentModeKHR.FifoKhr] = 20;
             for (var i = 0; i < n; i++)
             {
                 if (desired.TryGetValue(presentModes[i], out var ss) && ss > score)
@@ -281,12 +288,15 @@ public partial class GameWindow : IDisposable
                                     Format.R8G8B8A8Srgb,
                                     ColorSpaceKHR.SpaceSrgbNonlinearKhr,
                                     new Extent2D((uint)windowOptions.Size.X, (uint)windowOptions.Size.Y),
-                                    presentMode);
+                                    presentMode,
+                                    imageUsageFlags: ImageUsageFlags.TransferDstBit | ImageUsageFlags.ColorAttachmentBit);
         }
     }
 
     void CreateViews()
     {
+        textureBuffer = new VkTexture(ImageType.Type2D, new Extent3D(swapchain.Extent.Width, swapchain.Extent.Height, 1),
+                                    1, 1, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageLayout.Preinitialized, ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.TransferSrcBit | ImageUsageFlags.SampledBit, SampleCountFlags.Count1Bit, SharingMode.Exclusive, allocator);
         views = new List<VkImageView>();
         var mapping = new ComponentMapping();
         mapping.A = ComponentSwizzle.Identity;
@@ -302,12 +312,15 @@ public partial class GameWindow : IDisposable
         subresourceRange.LevelCount = 1;
         foreach (var image in swapchain.Images)
             views.Add(new VkImageView(ctx, device, image, mapping, subresourceRange));
+        textureBufferView = new VkImageView(ctx, device, textureBuffer.Image,mapping, subresourceRange);
     }
 
     void CreateFramebuffers()
     {
-        framebuffers = views.Select(z => new VkFrameBuffer(ctx, device,
-                    renderPass, (uint)windowOptions.Size.X, (uint)windowOptions.Size.Y, 1, [z])).ToArray();
+
+        framebuffers = [new VkFrameBuffer(ctx, device, renderPass, (uint)windowOptions.Size.X, (uint)windowOptions.Size.Y, 1, [textureBufferView])]; //views.Select(z => new VkFrameBuffer(ctx, device,
+                    //renderPass, (uint)windowOptions.Size.X, (uint)windowOptions.Size.Y, 1, [z])).ToArray();
+
     }
 
 

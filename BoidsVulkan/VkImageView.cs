@@ -10,14 +10,15 @@ public class VkImageView : IDisposable
     private readonly VkContext _ctx;
     private bool disposedValue;
 
-    public VkImageView(VkContext ctx, VkDevice device, VkImage image, ComponentMapping mapping, ImageSubresourceRange subresourceRange)
+    public VkImageView(VkContext ctx, VkDevice device, VkImage image, ComponentMapping mapping, ImageSubresourceRange subresourceRange, ImageViewType? viewType = null)
     {
+        viewType ??= (ImageViewType)image.Type;
         var imageCreateInfo = new ImageViewCreateInfo()
         {
             SType = StructureType.ImageViewCreateInfo,
             Image = image.Image,
             Format = image.Format,
-            ViewType = image.ViewType,
+            ViewType = viewType.Value,
             Components = mapping,
             SubresourceRange = subresourceRange
         };

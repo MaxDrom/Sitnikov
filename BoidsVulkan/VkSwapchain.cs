@@ -69,7 +69,7 @@ public class VkSwapchain : IDisposable
         _swapchainCtx = swapchainCtx;
         Extent = imageExtent;
         _images = _swapchainCtx.GetSwapchainImages(_swapchain)
-                .Select(z => new VkImage(z, imageFormat, ImageViewType.Type2D))
+                .Select(z => new VkImage(z, imageFormat, ImageType.Type2D))
                 .ToArray();
     }
 
