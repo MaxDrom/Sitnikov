@@ -72,7 +72,7 @@ class Program
         ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
         CultureInfo.CurrentCulture = new CultureInfo("en-US", false);
         CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalDigits = 28;
-        yoshida6 = YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(dV, dT, 3);
+        yoshida6 = YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(dV, dT, 2);
         // var taskList = new List<Task<(double, double)[]>>();
         // var grid = 100;
         // for (var x = 0; x < grid; x++)
