@@ -84,6 +84,8 @@ public partial class GameWindow : IDisposable
     int FPS;
     IWindow window;
     private bool disposedValue;
+    Format format;
+    ColorSpaceKHR colorSpace;
 
     public GameWindow(WindowOptions windowOptions, SymplecticIntegrator<double, Vector<double>> integrator)
     {
@@ -133,8 +135,27 @@ public partial class GameWindow : IDisposable
         Console.WriteLine(deviceName);
         device = new VkDevice(ctx, physicalDevice, [], [KhrSwapchain.ExtensionName]);
         swapchainCtx = new VkSwapchainContext(ctx, device);
-        CreateSwapchain();
         
+        SurfaceFormatKHR[] formats;
+        unsafe
+        {
+            uint nn;
+            ctx.SurfaceApi.GetPhysicalDeviceSurfaceFormats(physicalDevice, ctx.Surface, &nn, null);
+            formats = new SurfaceFormatKHR[nn];
+            fixed(SurfaceFormatKHR* pformat = formats)
+            {
+                ctx.SurfaceApi.GetPhysicalDeviceSurfaceFormats(physicalDevice, ctx.Surface, &nn, pformat);
+            }
+
+            foreach(var format in formats)
+                Console.WriteLine(format.Format); 
+            
+            format = formats[0].Format;
+            colorSpace = formats[0].ColorSpace;
+            
+        }
+
+        CreateSwapchain();
         staggingAllocator = new StupidAllocator(ctx, device,
                                             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
                                             MemoryHeapFlags.DeviceLocalBit);
@@ -285,8 +306,8 @@ public partial class GameWindow : IDisposable
             }
             ctx.SurfaceApi.GetPhysicalDeviceSurfaceCapabilities(device.PhysicalDevice, ctx.Surface,out var capabilities);
             swapchain = new VkSwapchain(ctx, ctx.Surface, swapchainCtx, [device.PresentFamilyIndex, device.GraphicsFamilyIndex], capabilities.MinImageCount + 1,
-                                    Format.R8G8B8A8Srgb,
-                                    ColorSpaceKHR.SpaceSrgbNonlinearKhr,
+                                    format,
+                                    colorSpace,
                                     new Extent2D((uint)windowOptions.Size.X, (uint)windowOptions.Size.Y),
                                     presentMode,
                                     imageUsageFlags: ImageUsageFlags.TransferDstBit | ImageUsageFlags.ColorAttachmentBit);
@@ -296,7 +317,7 @@ public partial class GameWindow : IDisposable
     void CreateViews()
     {
         textureBuffer = new VkTexture(ImageType.Type2D, new Extent3D(swapchain.Extent.Width, swapchain.Extent.Height, 1),
-                                    1, 1, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageLayout.Preinitialized, ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.TransferSrcBit | ImageUsageFlags.SampledBit, SampleCountFlags.Count1Bit, SharingMode.Exclusive, allocator);
+                                    1, 1, format, ImageTiling.Optimal, ImageLayout.Preinitialized, ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.TransferSrcBit | ImageUsageFlags.SampledBit, SampleCountFlags.Count1Bit, SharingMode.Exclusive, allocator);
         views = new List<VkImageView>();
         var mapping = new ComponentMapping();
         mapping.A = ComponentSwizzle.Identity;
