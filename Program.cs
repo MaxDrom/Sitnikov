@@ -67,7 +67,7 @@ class Program
 
     static SymplecticIntegrator<double, Vector<double>> yoshida6;
 
-    static async Task Main(string[] args)
+    static void Main(string[] args)
     {
         ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
         CultureInfo.CurrentCulture = new CultureInfo("en-US", false);
