@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 namespace BoidsVulkan;
@@ -5,7 +6,7 @@ namespace BoidsVulkan;
 public unsafe class VkDevice : IDisposable
 {
     internal Device Device => _device;
-    internal PhysicalDevice PhysicalDevice {get; private set;}
+    internal PhysicalDevice PhysicalDevice { get; private set; }
 
     private readonly Device _device;
     private readonly VkContext _ctx;
@@ -29,11 +30,15 @@ public unsafe class VkDevice : IDisposable
     public Queue TransferQueue => _transferQueue;
     private bool disposedValue;
 
-    public VkDevice(VkContext ctx, PhysicalDevice physicalDevice, 
+    public VkDevice(VkContext ctx, PhysicalDevice physicalDevice,
                 List<string> EnabledLayersNames,
                 List<string> EnabledExtensionsNames)
     {
+
         _ctx = ctx;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            EnabledExtensionsNames.Add("VK_KHR_portability_subset");
+
         PhysicalDevice = physicalDevice;
         var PEnabledLayersNames = (byte**)SilkMarshal.StringArrayToPtr(EnabledLayersNames);
         var PEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(EnabledExtensionsNames);
@@ -114,7 +119,7 @@ public unsafe class VkDevice : IDisposable
         SilkMarshal.Free((nint)PEnabledLayersNames);
         SilkMarshal.Free((nint)PEnabledExtensionNames);
 
-        
+
         if (_graphicsFamilyIndex != null)
             _ctx.Api.GetDeviceQueue(_device, _graphicsFamilyIndex!.Value, 0, out _graphicsQueue);
 
@@ -144,7 +149,7 @@ public unsafe class VkDevice : IDisposable
 
     public void Dispose()
     {
-        
+
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }

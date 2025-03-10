@@ -48,7 +48,7 @@ namespace BoidsVulkan
             var appInfo = new ApplicationInfo
             {
                 SType = StructureType.ApplicationInfo,
-                ApiVersion = Vk.Version12
+                ApiVersion = Vk.Version13
             };
 #if DEBUG
             var debugInfo = new DebugUtilsMessengerCreateInfoEXT

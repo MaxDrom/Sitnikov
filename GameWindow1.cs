@@ -84,8 +84,8 @@ public partial class GameWindow : IDisposable
     int FPS;
     IWindow window;
     private bool disposedValue;
-    Format format;
-    ColorSpaceKHR colorSpace;
+    Format format = Format.R16G16B16A16Sfloat;
+    ColorSpaceKHR colorSpace = ColorSpaceKHR.SpaceSrgbNonlinearKhr;
 
     public GameWindow(WindowOptions windowOptions, SymplecticIntegrator<double, Vector<double>> integrator)
     {
@@ -93,20 +93,20 @@ public partial class GameWindow : IDisposable
         this.windowOptions = windowOptions;
         window = Window.Create(windowOptions);
         var grid = 80;
-        instances = new Instance[grid * grid+1];
+        instances = new Instance[grid * grid + 1];
         for (var xx = 0; xx < grid; xx++)
         {
             for (var yy = 0; yy < grid; yy++)
             {
                 instances[xx + yy * grid] = new()
                 {
-                    position = new Vector2D<float>(-0f + xx / (grid-1f) * 0.5f, -0.0f + yy / (grid-1f) * 0.5f),
-                    color = new Vector4D<float>(xx / (grid-1f) * 1f,  yy / (grid-1f) * 1f, 1f, 1f),
+                    position = new Vector2D<float>(-0f + xx / (grid - 1f) * 0.5f, -0.0f + yy / (grid - 1f) * 0.5f),
+                    color = new Vector4D<float>(xx / (grid - 1f) * 1f, yy / (grid - 1f) * 1f, 1f, 1f),
                     offset = new Vector2D<float>(0, 1)
                 };
             }
         }
-        instances[grid*grid] = new()
+        instances[grid * grid] = new()
         {
             position = Vector2D<float>.Zero,
             color = new Vector4D<float>(0, 0, 0, 1.0f),
@@ -135,24 +135,28 @@ public partial class GameWindow : IDisposable
         Console.WriteLine(deviceName);
         device = new VkDevice(ctx, physicalDevice, [], [KhrSwapchain.ExtensionName]);
         swapchainCtx = new VkSwapchainContext(ctx, device);
-        
+
         SurfaceFormatKHR[] formats;
         unsafe
         {
             uint nn;
             ctx.SurfaceApi.GetPhysicalDeviceSurfaceFormats(physicalDevice, ctx.Surface, &nn, null);
             formats = new SurfaceFormatKHR[nn];
-            fixed(SurfaceFormatKHR* pformat = formats)
+            fixed (SurfaceFormatKHR* pformat = formats)
             {
                 ctx.SurfaceApi.GetPhysicalDeviceSurfaceFormats(physicalDevice, ctx.Surface, &nn, pformat);
             }
 
-            foreach(var format in formats)
-                Console.WriteLine(format.Format); 
-            
-            format = formats[0].Format;
-            colorSpace = formats[0].ColorSpace;
-            
+            foreach (var fformat in formats)
+                if (fformat.Format == Format.R16G16B16A16Sfloat)
+                {
+                    colorSpace = fformat.ColorSpace;
+                    break;
+                }
+
+            //format = formats[0].Format;
+            //colorSpace = formats[0].ColorSpace;
+
         }
 
         CreateSwapchain();
@@ -160,12 +164,12 @@ public partial class GameWindow : IDisposable
                                             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
                                             MemoryHeapFlags.DeviceLocalBit);
         allocator = new StupidAllocator(ctx, device, MemoryPropertyFlags.None, MemoryHeapFlags.DeviceLocalBit);
-        
-        
+
+
 
         CreateViews();
         vertexBuffer = new VkBuffer((ulong)vertices.Length * ((ulong)Marshal.SizeOf<Vertex>()), BufferUsageFlags.VertexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
-        indexBuffer = new VkBuffer((ulong)indices.Length * sizeof(uint), BufferUsageFlags.IndexBufferBit | BufferUsageFlags.TransferDstBit , SharingMode.Exclusive, allocator);
+        indexBuffer = new VkBuffer((ulong)indices.Length * sizeof(uint), BufferUsageFlags.IndexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
         var subpass1 = new VkSubpassInfo(PipelineBindPoint.Graphics, [
                     new AttachmentReference()
             {
@@ -209,14 +213,14 @@ public partial class GameWindow : IDisposable
         quadVertexBuffer = new VkBuffer((ulong)quadVertices.Length * (ulong)Marshal.SizeOf<Vertex>(),
                                         BufferUsageFlags.VertexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
         // quadInstanceBuffer = new VkBuffer((ulong)instances1.Length * (ulong)Marshal.SizeOf<Instance>(),
-                                        // BufferUsageFlags.VertexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
+        // BufferUsageFlags.VertexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
 
         CopyDataToBuffer(quadVertices, quadVertexBuffer);
         CopyDataToBuffer(vertices, vertexBuffer);
         CopyDataToBuffer(indices, indexBuffer);
         CopyDataToBuffer(instances, instanceBuffer);
         // CopyDataToBuffer(instances1, quadInstanceBuffer);
-        
+
         buffers = commandPool.AllocateBuffers(CommandBufferLevel.Primary, views.Count);
 
         for (var i = 0; i < views.Count; i++)
@@ -248,7 +252,7 @@ public partial class GameWindow : IDisposable
         window.Render += OnRender;
         window.Closing += () => ctx.Api.DeviceWaitIdle(device.Device);
         window.Resize += OnResize;
-        window.Update += (x)=>OnUpdate(x).GetAwaiter().GetResult();
+        window.Update += (x) => OnUpdate(x).GetAwaiter().GetResult();
     }
 
 
@@ -304,7 +308,7 @@ public partial class GameWindow : IDisposable
                     score = ss;
                 }
             }
-            ctx.SurfaceApi.GetPhysicalDeviceSurfaceCapabilities(device.PhysicalDevice, ctx.Surface,out var capabilities);
+            ctx.SurfaceApi.GetPhysicalDeviceSurfaceCapabilities(device.PhysicalDevice, ctx.Surface, out var capabilities);
             swapchain = new VkSwapchain(ctx, ctx.Surface, swapchainCtx, [device.PresentFamilyIndex, device.GraphicsFamilyIndex], capabilities.MinImageCount + 1,
                                     format,
                                     colorSpace,
@@ -333,14 +337,14 @@ public partial class GameWindow : IDisposable
         subresourceRange.LevelCount = 1;
         foreach (var image in swapchain.Images)
             views.Add(new VkImageView(ctx, device, image, mapping, subresourceRange));
-        textureBufferView = new VkImageView(ctx, device, textureBuffer.Image,mapping, subresourceRange);
+        textureBufferView = new VkImageView(ctx, device, textureBuffer.Image, mapping, subresourceRange);
     }
 
     void CreateFramebuffers()
     {
 
         framebuffers = [new VkFrameBuffer(ctx, device, renderPass, (uint)windowOptions.Size.X, (uint)windowOptions.Size.Y, 1, [textureBufferView])]; //views.Select(z => new VkFrameBuffer(ctx, device,
-                    //renderPass, (uint)windowOptions.Size.X, (uint)windowOptions.Size.Y, 1, [z])).ToArray();
+                                                                                                                                                     //renderPass, (uint)windowOptions.Size.X, (uint)windowOptions.Size.Y, 1, [z])).ToArray();
 
     }
 
