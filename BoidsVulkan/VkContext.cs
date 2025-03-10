@@ -35,7 +35,7 @@ namespace BoidsVulkan
             var flags = InstanceCreateFlags.None;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                enabledInstanceExtensions.Add("VK_KHR_portability_subset");
+                //enabledInstanceExtensions.Add("VK_KHR_portability_subset");
                 enabledInstanceExtensions.Add("VK_KHR_portability_enumeration");
                 flags |= InstanceCreateFlags.EnumeratePortabilityBitKhr;
             }
