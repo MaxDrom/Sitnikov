@@ -88,7 +88,7 @@ public partial class GameWindow : IDisposable
         this.integrator = integrator;
         this.windowOptions = windowOptions;
         window = Window.Create(windowOptions);
-        var grid = 70;
+        var grid = 50;
         instances = new Instance[grid * grid+1];
         for (var xx = 0; xx < grid; xx++)
         {
@@ -97,14 +97,16 @@ public partial class GameWindow : IDisposable
                 instances[xx + yy * grid] = new()
                 {
                     position = new Vector2D<float>(-0f + xx / (grid-1f) * 0.5f, -0.0f + yy / (grid-1f) * 0.5f),
-                    color = new Vector4D<float>(xx / (grid-1f) * 1f,  yy / (grid-1f) * 1f, 1f, 1f)
+                    color = new Vector4D<float>(xx / (grid-1f) * 1f,  yy / (grid-1f) * 1f, 1f, 1f),
+                    offset = new Vector2D<float>(0, 1)
                 };
             }
         }
         instances[grid*grid] = new()
         {
             position = Vector2D<float>.Zero,
-            color = new Vector4D<float>(0, 0, 0, 1.0f)
+            color = new Vector4D<float>(0, 0, 0, 1.0f),
+            offset = new Vector2D<float>(0, 1)
         };
         window.Initialize();
         if (window.VkSurface is null)
