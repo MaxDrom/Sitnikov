@@ -12,7 +12,7 @@ struct Instance : IVertexData
     [VertexAttributeDescription(2, Format.R32G32Sfloat)]
     public Vector2D<float> position;
 
-    [VertexAttributeDescription(3, Format.R32G32Sfloat)]
+    [VertexAttributeDescription(3, Format.R32G32B32A32Sfloat)]
     public Vector4D<float> color;
 }
 
@@ -20,13 +20,13 @@ public partial class GameWindow
 {
     SymplecticIntegrator<double, Vector<double>> integrator;
     Instance[] instances;
-    Instance[] instances1 = [
-        new()
-        {
-            position = new Vector2D<float>(0, 0),
-            color = new Vector4D<float>(0, 0, 0, 1.0f)
-        }
-    ];
+    // Instance[] instances1 = [
+    //     new()
+    //     {
+    //         position = new Vector2D<float>(0, 0),
+    //         color = new Vector4D<float>(0, 0, 0, 1.0f)
+    //     }
+    // ];
 
     Vertex[] vertices =
     [
@@ -109,19 +109,19 @@ public partial class GameWindow
 
                 recording.BindPipline(graphicsPipeline);
 
-                recording.BindVertexBuffers(0, [quadVertexBuffer, quadInstanceBuffer], [0, 0]);
+                recording.BindVertexBuffers(0, [quadVertexBuffer, instanceBuffer], [0, (ulong)Marshal.SizeOf<Instance>()*(ulong)(instances.Length - 1)]);
                 recording.BindIndexBuffer(indexBuffer, 0, IndexType.Uint32);
                 renderRecording.SetViewport(ref viewport);
                 renderRecording.SetScissor(ref scissor);
-                renderRecording.SetBlendConstant(blendFactors);
-                renderRecording.DrawIndexed((uint)indices.Length, (uint)instances1.Length, 0, 0);
+                //renderRecording.SetBlendConstant(blendFactors);
+                renderRecording.DrawIndexed((uint)indices.Length, 1u, 0, 0);
 
                 recording.BindVertexBuffers(0, [vertexBuffer, instanceBuffer], [0, 0]);
                 recording.BindIndexBuffer(indexBuffer, 0, IndexType.Uint32);
                 renderRecording.SetViewport(ref viewport);
                 renderRecording.SetScissor(ref scissor);
-                renderRecording.SetBlendConstant(blendFactor2);
-                renderRecording.DrawIndexed((uint)indices.Length, (uint)instances.Length, 0, 0);
+                //renderRecording.SetBlendConstant(blendFactor2);
+                renderRecording.DrawIndexed((uint)indices.Length, (uint)instances.Length-1, 0, 0);
             }
         }
     }
@@ -156,8 +156,15 @@ public partial class GameWindow
     async Task OnUpdate(double frametime)
     {
 
-        staggingVertex ??= new VkBuffer((ulong)instances.Length * (ulong)Marshal.SizeOf<Instance>(), BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive, staggingAllocator);
-
+        if (staggingVertex == null)
+        {
+            staggingVertex = new VkBuffer((ulong)instances.Length * (ulong)Marshal.SizeOf<Instance>(), BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive, staggingAllocator);
+            copyBuffer.Reset(CommandBufferResetFlags.None);
+            using (var recording = copyBuffer.Begin(CommandBufferUsageFlags.SimultaneousUseBit))
+            {
+                recording.CopyBuffer(staggingVertex, instanceBuffer, 0, 0, staggingVertex.Size);
+            }
+        }
 
         totalFrametime += frametime;
         FPS++;
@@ -167,38 +174,35 @@ public partial class GameWindow
             totalFrametime = 0;
             FPS = 0;
         }
-        for (var i = 0; i < 4; i++)
-        {
-            blendFactors[i] = (float)Math.Exp(-300 * frametime);
-            blendFactor2[i] = 1f;
-        }
-        
+
+
         var taskList = new List<Task<Instance>>();
-        for (var i = 0; i < instances.Length; i++)
+        for (var i = 0; i < instances.Length-1; i++)
         {
             var pos = instances[i].position;
             var col = instances[i].color;
             taskList.Add(Task.Run(() => new Instance() { position = Step(pos, frametime, totalTime), color = col }));
         }
-        ;
+    
 
-        var result = await Task.WhenAll(taskList).ConfigureAwait(false);
+        var result = await Task.WhenAll(taskList);
         totalTime += frametime;
         using (var mapped = staggingVertex.Map<Instance>(0, instances.Length))
         {
-            for (var i = 0; i < instances.Length; i++)
+            for (var i = 0; i < instances.Length-1; i++)
             {
                 mapped[i] = instances[i] = result[i];
             }
+            mapped[instances.Length-1] = new Instance()
+            {
+                position = Vector2D<float>.Zero,
+                color = new Vector4D<float>(0, 0, 0, (float)Math.Exp(-300 * frametime))
+            };
         }
 
         await copyFence.WaitFor();
         copyFence.Reset();
-        copyBuffer.Reset(CommandBufferResetFlags.None);
-        using (var recording = copyBuffer.Begin(CommandBufferUsageFlags.OneTimeSubmitBit))
-        {
-            recording.CopyBuffer(staggingVertex, instanceBuffer, 0, 0, staggingVertex.Size);
-        }
+       
         copyBuffer.Submit(device.TransferQueue, copyFence,
                                             waitSemaphores: [],
                                             signalSemaphores: []);
@@ -213,8 +217,8 @@ public partial class GameWindow
             return;
 
         fences[frameIndex].Reset();
-        buffers[imageIndex].Reset(CommandBufferResetFlags.None);
-        RecordBuffer(buffers[imageIndex], (int)imageIndex);
+        //buffers[imageIndex].Reset(CommandBufferResetFlags.None);
+        //RecordBuffer(buffers[imageIndex], (int)imageIndex);
         buffers[imageIndex].Submit(device.GraphicsQueue, fences[frameIndex],
                 waitSemaphores: [imageAvailableSemaphores[frameIndex]],
                 signalSemaphores: [renderFinishedSemaphores[frameIndex]]);

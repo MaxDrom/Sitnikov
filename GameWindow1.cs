@@ -30,7 +30,7 @@ public partial class GameWindow : IDisposable
     VkBuffer indexBuffer;
     VkBuffer instanceBuffer;
     VkBuffer quadVertexBuffer;
-    VkBuffer quadInstanceBuffer;
+    // VkBuffer quadInstanceBuffer;
     VkCommandPool commandPool;
     VkGraphicsPipeline graphicsPipeline;
     VkBuffer staggingVertex;
@@ -55,7 +55,7 @@ public partial class GameWindow : IDisposable
                     sem.Dispose();
 
                 quadVertexBuffer.Dispose();
-                quadInstanceBuffer.Dispose();
+                // quadInstanceBuffer.Dispose();
                 instanceBuffer.Dispose();
                 copyFinishedSemaphore.Dispose();
                 staggingVertex?.Dispose();
@@ -89,7 +89,7 @@ public partial class GameWindow : IDisposable
         this.windowOptions = windowOptions;
         window = Window.Create(windowOptions);
         var grid = 70;
-        instances = new Instance[grid * grid];
+        instances = new Instance[grid * grid+1];
         for (var xx = 0; xx < grid; xx++)
         {
             for (var yy = 0; yy < grid; yy++)
@@ -101,7 +101,11 @@ public partial class GameWindow : IDisposable
                 };
             }
         }
-
+        instances[grid*grid] = new()
+        {
+            position = Vector2D<float>.Zero,
+            color = new Vector4D<float>(0, 0, 0, 1.0f)
+        };
         window.Initialize();
         if (window.VkSurface is null)
         {
@@ -175,14 +179,14 @@ public partial class GameWindow : IDisposable
 
         quadVertexBuffer = new VkBuffer((ulong)quadVertices.Length * (ulong)Marshal.SizeOf<Vertex>(),
                                         BufferUsageFlags.VertexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
-        quadInstanceBuffer = new VkBuffer((ulong)instances1.Length * (ulong)Marshal.SizeOf<Instance>(),
-                                        BufferUsageFlags.VertexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
+        // quadInstanceBuffer = new VkBuffer((ulong)instances1.Length * (ulong)Marshal.SizeOf<Instance>(),
+                                        // BufferUsageFlags.VertexBufferBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, allocator);
 
         CopyDataToBuffer(quadVertices, quadVertexBuffer);
         CopyDataToBuffer(vertices, vertexBuffer);
         CopyDataToBuffer(indices, indexBuffer);
         CopyDataToBuffer(instances, instanceBuffer);
-        CopyDataToBuffer(instances1, quadInstanceBuffer);
+        // CopyDataToBuffer(instances1, quadInstanceBuffer);
         
         buffers = commandPool.AllocateBuffers(CommandBufferLevel.Primary, views.Count);
 
@@ -375,8 +379,8 @@ public partial class GameWindow : IDisposable
             SrcAlphaBlendFactor = BlendFactor.One,
             DstAlphaBlendFactor = BlendFactor.Zero,
             AlphaBlendOp = BlendOp.Add,
-            SrcColorBlendFactor = BlendFactor.ConstantAlpha,
-            DstColorBlendFactor = BlendFactor.OneMinusConstantAlpha
+            SrcColorBlendFactor = BlendFactor.SrcAlpha,
+            DstColorBlendFactor = BlendFactor.OneMinusSrcAlpha
 
         };
 
@@ -394,7 +398,7 @@ public partial class GameWindow : IDisposable
             pipelineLayout,
             renderPass,
             0,
-            [DynamicState.Viewport, DynamicState.Scissor, DynamicState.BlendConstants],
+            [DynamicState.Viewport, DynamicState.Scissor],
             pipelineVertexInput,
             viewport,
             scissor,
