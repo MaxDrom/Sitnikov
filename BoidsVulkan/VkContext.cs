@@ -28,10 +28,16 @@ namespace BoidsVulkan
         {
             var enabledInstanceExtensions = new List<string> { ExtDebugUtils.ExtensionName };
             enabledInstanceExtensions.AddRange(RequiredExtensions);
+            
 #if DEBUG
             var enabledLayers = new List<string> { "VK_LAYER_KHRONOS_validation" };
 #endif
             var flags = InstanceCreateFlags.None;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                enabledInstanceExtensions.Add("VK_KHR_portability_enumeration");
+                flags |= InstanceCreateFlags.EnumeratePortabilityBitKhr;
+            }
 #if DEBUG
             var pPEnabledLayers = (byte**)SilkMarshal.StringArrayToPtr([.. enabledLayers]);
 #endif
