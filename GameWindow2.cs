@@ -105,6 +105,26 @@ public partial class GameWindow
         buffer.Reset(CommandBufferResetFlags.None);
         using (var recording = buffer.Begin(CommandBufferUsageFlags.None))
         {
+            var subresourceRange = new ImageSubresourceRange(ImageAspectFlags.ColorBit, 0, 1, 0, 1);
+            unsafe
+            {
+                ImageMemoryBarrier bb = new()
+                {
+                    SType = StructureType.ImageMemoryBarrier,
+                    OldLayout = ImageLayout.Undefined,
+                    NewLayout = ImageLayout.General,
+                    SrcAccessMask = AccessFlags.None,
+                    DstAccessMask = AccessFlags.MemoryReadBit,
+                    Image = textureBuffer.Image.Image,
+                    SubresourceRange = subresourceRange
+                };
+
+                ctx.Api.CmdPipelineBarrier(buffer.InternalBuffer,
+                                PipelineStageFlags.TopOfPipeBit,
+                                PipelineStageFlags.ColorAttachmentOutputBit, 0, 0, null, 0, null, 1, ref bb);
+
+
+            }
 
             using (var renderRecording = recording.BeginRenderPass(renderPass, framebuffers[0], scissor))
             {
@@ -129,7 +149,7 @@ public partial class GameWindow
                 renderRecording.DrawIndexed((uint)indices.Length, (uint)instances.Length - 1, 0, 0);
 
             }
-            var subresourceRange = new ImageSubresourceRange(ImageAspectFlags.ColorBit, 0, 1, 0, 1);
+
             ImageCopy region = new ImageCopy()
             {
                 SrcOffset = new Offset3D(0, 0, 0),
@@ -184,10 +204,11 @@ public partial class GameWindow
                     Image = swapchain.Images[imageIndex].Image,
                     SubresourceRange = subresourceRange
                 };
+
+
                 ctx.Api.CmdPipelineBarrier(buffer.InternalBuffer,
                 PipelineStageFlags.TransferBit,
                 PipelineStageFlags.BottomOfPipeBit, 0, 0, null, 0, null, 1, ref barrier2);
-                //ctx.Api.CmdPipelineBarrier(buffer.InternalBuffer, PipelineStageFlags.)
             }
         }
     }
@@ -223,7 +244,7 @@ public partial class GameWindow
     VkMappedMemory<Instance> mapped;
     async Task OnUpdate(double frametime)
     {
-        
+
         // int maxFPS = 200;
         // double minFrametime = 1.0 / (double)maxFPS;
         // if (frametime < minFrametime)
@@ -286,7 +307,7 @@ public partial class GameWindow
         {
             position = Vector2D<float>.Zero,
             offset = new Vector2D<float>(0, 1),
-            color = new Vector4D<float>(0, 0, 0, 1-(float)Math.Exp(-frametime))
+            color = new Vector4D<float>(0, 0, 0, 1 - (float)Math.Exp(-frametime))
         };
 
 

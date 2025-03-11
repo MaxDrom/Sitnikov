@@ -187,11 +187,11 @@ public partial class GameWindow : IDisposable
         {
             Format = swapchain.Images.First().Format,
             Samples = SampleCountFlags.Count1Bit,
-            LoadOp = AttachmentLoadOp.Clear,
+            LoadOp = AttachmentLoadOp.Load,
             StoreOp = AttachmentStoreOp.Store,
             StencilLoadOp = AttachmentLoadOp.DontCare,
             StencilStoreOp = AttachmentStoreOp.DontCare,
-            InitialLayout = ImageLayout.Undefined,
+            InitialLayout = ImageLayout.General,
             FinalLayout = ImageLayout.TransferSrcOptimal
         };
 
@@ -327,6 +327,14 @@ public partial class GameWindow : IDisposable
     {
         textureBuffer = new VkTexture(ImageType.Type2D, new Extent3D(swapchain.Extent.Width, swapchain.Extent.Height, 1),
                                     1, 1, format, ImageTiling.Optimal, ImageLayout.Preinitialized, ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.TransferSrcBit | ImageUsageFlags.SampledBit | ImageUsageFlags.StorageBit, SampleCountFlags.Count1Bit, SharingMode.Exclusive, allocator);
+
+        using (var texMap = textureBuffer.Map(textureBuffer.Size))
+        {
+            for(var i = 0u; i< texMap.Length; i++)
+            {
+                texMap[i] = 0;
+            }
+        }
         views = new List<VkImageView>();
         var mapping = new ComponentMapping();
         mapping.A = ComponentSwizzle.Identity;

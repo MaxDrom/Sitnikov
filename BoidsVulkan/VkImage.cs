@@ -24,6 +24,8 @@ public class VkTexture : IDisposable
 {
     public VkImage Image { get; private set; }
     public DeviceMemory Memory => _node.Memory;
+    public ulong Size => _size;
+    private ulong _size;
     private IVkAllocator _allocator;
     private AllocationNode _node;
     private VkContext _ctx;
@@ -64,6 +66,7 @@ public class VkTexture : IDisposable
         _ctx.Api.GetImageMemoryRequirements(_device.Device, imageUnmanaged, out var reqs);
         _node = allocator.Allocate(reqs);
         _ctx.Api.BindImageMemory(_device.Device, imageUnmanaged, _node.Memory, _node.Offset);
+        _size = reqs.Size;
     }
     protected virtual void Dispose(bool disposing)
     {
@@ -76,6 +79,11 @@ public class VkTexture : IDisposable
             }
             disposedValue = true;
         }
+    }
+
+    public VkMappedMemory<byte> Map(ulong size)
+    {
+        return new VkMappedMemory<byte>(_ctx, _device, _node.Memory, _node.Offset, size, MemoryMapFlags.None);
     }
 
     ~VkTexture()
