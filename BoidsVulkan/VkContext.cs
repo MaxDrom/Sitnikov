@@ -125,7 +125,8 @@ namespace BoidsVulkan
                                       void* pUserData)
         {
             var message = Marshal.PtrToStringAnsi((nint)pCallbackData->PMessage);
-            if(message.Trim().Length > 0)
+            var copy = $"{message}";
+            if(copy.Trim().Length > 0)
                 Console.WriteLine($"[Vulkan]: {severityFlags}: {message}");
             return Vk.False;
         }
