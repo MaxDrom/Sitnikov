@@ -16,6 +16,7 @@ public class SitnikovConfig
     public (double, double) RangeY { get; set; } = (0, 1);
 
     public bool PoincareMap = false;
+    public int PoincareMapCount {get; set;} 
 }
 
 
@@ -115,7 +116,7 @@ class Program
                                 Task.Run(() =>
                                             PoincareMap(q,
                                                         p,
-                                                        1000)
+                                                        config.PoincareMapCount)
                                         ));
 
                 }

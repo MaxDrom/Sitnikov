@@ -8,3 +8,4 @@ RangeY:
   Item1: 0
   Item2: 0.5
 PoincareMap: false
+PoincareMapCount: 10
