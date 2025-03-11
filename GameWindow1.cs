@@ -103,8 +103,8 @@ public partial class GameWindow : IDisposable
             {
                 instances[xx + yy * gridX] = new()
                 {
-                    position = new Vector2D<float>((float)config.RangeX.Item1 
-                                    + xx / (gridX - 1f) * dx, (float)config.RangeY.Item1 
+                    position = new Vector2D<float>((float)config.RangeX.Item1
+                                    + xx / (gridX - 1f) * dx, (float)config.RangeY.Item1
                                         + yy / (gridY - 1f) * dy),
                     color = new Vector4D<float>(xx / (gridX - 1f), yy / (gridY - 1f), 1f, 1f),
                     offset = new Vector2D<float>(0, 1)
@@ -165,6 +165,9 @@ public partial class GameWindow : IDisposable
         }
 
         CreateSwapchain();
+        commandPool = new VkCommandPool(ctx, device,
+                            CommandPoolCreateFlags.ResetCommandBufferBit,
+                            device.GraphicsFamilyIndex);
         staggingAllocator = new StupidAllocator(ctx, device,
                                             MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,
                                             MemoryHeapFlags.DeviceLocalBit);
@@ -208,9 +211,7 @@ public partial class GameWindow : IDisposable
         renderPass = new VkRenderPass(ctx, device, [subpass1], [dependency], [attachmentDescription]);
         graphicsPipeline = CreateGraphicsPipeline(ctx, device, renderPass, windowOptions, swapchain);
         CreateFramebuffers();
-        commandPool = new VkCommandPool(ctx, device,
-                                    CommandPoolCreateFlags.ResetCommandBufferBit,
-                                    device.GraphicsFamilyIndex);
+
         copyBuffer = commandPool.AllocateBuffers(CommandBufferLevel.Primary, 1).First();
         instanceBuffer = new VkBuffer((ulong)instances.Length * (ulong)Marshal.SizeOf<Instance>(), BufferUsageFlags.VertexBufferBit | BufferUsageFlags.TransferDstBit,
                                         SharingMode.Exclusive, allocator);
@@ -326,15 +327,63 @@ public partial class GameWindow : IDisposable
     void CreateViews()
     {
         textureBuffer = new VkTexture(ImageType.Type2D, new Extent3D(swapchain.Extent.Width, swapchain.Extent.Height, 1),
-                                    1, 1, format, ImageTiling.Optimal, ImageLayout.Preinitialized, ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.TransferSrcBit | ImageUsageFlags.SampledBit | ImageUsageFlags.StorageBit, SampleCountFlags.Count1Bit, SharingMode.Exclusive, allocator);
+                                    1, 1, format, ImageTiling.Optimal, ImageLayout.Undefined, ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.TransferSrcBit | ImageUsageFlags.SampledBit | ImageUsageFlags.StorageBit | ImageUsageFlags.TransferDstBit, SampleCountFlags.Count1Bit, SharingMode.Exclusive, allocator);
 
-        using (var texMap = textureBuffer.Map(textureBuffer.Size))
+        var staggingBuffer = new VkBuffer(textureBuffer.Size, BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive, staggingAllocator);
+        using (var mapped = staggingBuffer.Map<byte>(0, textureBuffer.Size))
         {
-            for(var i = 0u; i< texMap.Length; i++)
+            for (var i = 0u; i < mapped.Length; i++)
             {
-                texMap[i] = 0;
+                mapped[i] = 0;
             }
         }
+        var copyRegion = new BufferImageCopy
+        {
+            BufferOffset = 0,
+            BufferRowLength = 0, // 0 = packed data
+            BufferImageHeight = 0,
+
+            ImageSubresource = new ImageSubresourceLayers
+            {
+                AspectMask = ImageAspectFlags.ColorBit,
+                MipLevel = 0,
+                BaseArrayLayer = 0,
+                LayerCount = 1
+            },
+
+            ImageOffset = new Offset3D(0, 0, 0),
+            ImageExtent = textureBuffer.Extent
+        };
+        var copyBuffer = commandPool.AllocateBuffers(CommandBufferLevel.Primary, 1).First();
+        using (var recording = copyBuffer.Begin(CommandBufferUsageFlags.OneTimeSubmitBit))
+        {
+            var barrier = new ImageMemoryBarrier
+            {
+                SType = StructureType.ImageMemoryBarrier,
+                OldLayout = ImageLayout.Undefined,
+                NewLayout = ImageLayout.General,
+
+                Image = textureBuffer.Image.Image,
+                SubresourceRange = new ImageSubresourceRange
+                {
+                    AspectMask = ImageAspectFlags.ColorBit,
+                    BaseMipLevel = 0,
+                    LevelCount = 1,
+                    BaseArrayLayer = 0,
+                    LayerCount = 1
+                },
+                SrcAccessMask = 0,
+                DstAccessMask = AccessFlags.TransferWriteBit
+            };
+            unsafe
+            {
+                ctx.Api.CmdPipelineBarrier(copyBuffer.InternalBuffer, PipelineStageFlags.TopOfPipeBit, PipelineStageFlags.TransferBit, 0, 0, null, 0, null, 1, ref barrier);
+            }
+            ctx.Api.CmdCopyBufferToImage(copyBuffer.InternalBuffer, staggingBuffer.Buffer, textureBuffer.Image.Image, ImageLayout.General, new ReadOnlySpan<BufferImageCopy>(ref copyRegion));
+        }
+        copyBuffer.Submit(device.TransferQueue, VkFence.NullHandle, [], []);
+        ctx.Api.QueueWaitIdle(device.TransferQueue);
+
         views = new List<VkImageView>();
         var mapping = new ComponentMapping();
         mapping.A = ComponentSwizzle.Identity;

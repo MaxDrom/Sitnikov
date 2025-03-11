@@ -22,6 +22,7 @@ public class VkImage
 
 public class VkTexture : IDisposable
 {
+    public Extent3D Extent {get; private set;}
     public VkImage Image { get; private set; }
     public DeviceMemory Memory => _node.Memory;
     public ulong Size => _size;
@@ -43,6 +44,7 @@ public class VkTexture : IDisposable
         _allocator = allocator;
         _ctx = allocator.Ctx;
         _device = allocator.Device;
+        Extent = extent;
         var imageInfo = new ImageCreateInfo()
         {
             SType = StructureType.ImageCreateInfo,

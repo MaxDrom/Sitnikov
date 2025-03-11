@@ -2,7 +2,6 @@
 using System.Globalization;
 using Silk.NET.Windowing;
 using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace SymplecticIntegrators;
 
@@ -107,11 +106,9 @@ class Program
             for (var x = 0; x < gridX; x++)
             {
                 var q =  config.RangeX.Item1 + dx* x / (double)(gridX -1);
-                //var maxvel = Math.Sqrt(2 / Math.Sqrt(q * q + 1)) * 1.5;
                 for (var y = 0; y < gridY; y++)
                 {
                     var p =  config.RangeY.Item1 + dx* y / (double)(gridY -1);
-                    //var p = -maxvel + 2 * maxvel * y / (double)grid;
                     taskList.Add(
                                 Task.Run(() =>
                                             PoincareMap(q,

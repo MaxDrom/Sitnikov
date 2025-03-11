@@ -53,6 +53,16 @@ public class VkBuffer : IDisposable
                                     offset, size, MemoryMapFlags.None);
     }
 
+    public VkMappedMemory<T> Map<T>(ulong offset, ulong size)
+        where T : unmanaged
+    {
+        ulong structSize = (ulong)Marshal.SizeOf<T>();
+        if(structSize*size + offset*structSize > Size)
+            throw new ArgumentException();
+        return new VkMappedMemory<T>(_ctx, _device, _node.Memory, 
+                                    offset, size, MemoryMapFlags.None);
+    }
+
     protected virtual void Dispose(bool disposing)
     {
         if (!disposedValue)
