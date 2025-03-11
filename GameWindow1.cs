@@ -321,7 +321,7 @@ public partial class GameWindow : IDisposable
     void CreateViews()
     {
         textureBuffer = new VkTexture(ImageType.Type2D, new Extent3D(swapchain.Extent.Width, swapchain.Extent.Height, 1),
-                                    1, 1, format, ImageTiling.Optimal, ImageLayout.Preinitialized, ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.TransferSrcBit | ImageUsageFlags.SampledBit, SampleCountFlags.Count1Bit, SharingMode.Exclusive, allocator);
+                                    1, 1, format, ImageTiling.Optimal, ImageLayout.Preinitialized, ImageUsageFlags.ColorAttachmentBit | ImageUsageFlags.TransferSrcBit | ImageUsageFlags.SampledBit | ImageUsageFlags.StorageBit, SampleCountFlags.Count1Bit, SharingMode.Exclusive, allocator);
         views = new List<VkImageView>();
         var mapping = new ComponentMapping();
         mapping.A = ComponentSwizzle.Identity;

@@ -286,7 +286,7 @@ public partial class GameWindow
         {
             position = Vector2D<float>.Zero,
             offset = new Vector2D<float>(0, 1),
-            color = new Vector4D<float>(0, 0, 0, (float)Math.Exp(-frametime*300))
+            color = new Vector4D<float>(0, 0, 0, 1-(float)Math.Exp(-frametime))
         };
 
 

@@ -55,11 +55,9 @@ namespace BoidsVulkan
             {
                 SType = StructureType.DebugUtilsMessengerCreateInfoExt,
                 MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.ErrorBitExt
-                | DebugUtilsMessageSeverityFlagsEXT.WarningBitExt |
-                DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt | DebugUtilsMessageSeverityFlagsEXT.InfoBitExt,
+                | DebugUtilsMessageSeverityFlagsEXT.WarningBitExt | DebugUtilsMessageSeverityFlagsEXT.InfoBitExt,
                 MessageType = DebugUtilsMessageTypeFlagsEXT.ValidationBitExt
-                | DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt | DebugUtilsMessageTypeFlagsEXT.DeviceAddressBindingBitExt
-                | DebugUtilsMessageTypeFlagsEXT.GeneralBitExt,
+                | DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt | DebugUtilsMessageTypeFlagsEXT.DeviceAddressBindingBitExt,
                 PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT)DebugCallback
             };
 
@@ -75,6 +73,7 @@ namespace BoidsVulkan
                     SType = StructureType.ValidationFeaturesExt,
                     EnabledValidationFeatureCount = (uint)validationFeatureEnables.Length,
                     PEnabledValidationFeatures = pEnabledFeatures
+
                 };
 
                 // Теперь validationFeatures можно использовать в дальнейшем коде
@@ -126,7 +125,8 @@ namespace BoidsVulkan
                                       void* pUserData)
         {
             var message = Marshal.PtrToStringAnsi((nint)pCallbackData->PMessage);
-            Console.WriteLine($"[Vulkan]: {severityFlags}: {message}");
+            if(message.Trim().Length > 0)
+                Console.WriteLine($"[Vulkan]: {severityFlags}: {message}");
             return Vk.False;
         }
 #endif
