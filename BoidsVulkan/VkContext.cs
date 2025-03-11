@@ -28,7 +28,7 @@ namespace BoidsVulkan
         {
             var enabledInstanceExtensions = new List<string> { ExtDebugUtils.ExtensionName };
             enabledInstanceExtensions.AddRange(RequiredExtensions);
-            
+
 #if DEBUG
             var enabledLayers = new List<string> { "VK_LAYER_KHRONOS_validation" };
 #endif
@@ -55,12 +55,33 @@ namespace BoidsVulkan
             {
                 SType = StructureType.DebugUtilsMessengerCreateInfoExt,
                 MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.ErrorBitExt
-                | DebugUtilsMessageSeverityFlagsEXT.WarningBitExt,
+                | DebugUtilsMessageSeverityFlagsEXT.WarningBitExt |
+                DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt | DebugUtilsMessageSeverityFlagsEXT.InfoBitExt,
                 MessageType = DebugUtilsMessageTypeFlagsEXT.ValidationBitExt
-                | DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt | DebugUtilsMessageTypeFlagsEXT.DeviceAddressBindingBitExt,
+                | DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt | DebugUtilsMessageTypeFlagsEXT.DeviceAddressBindingBitExt
+                | DebugUtilsMessageTypeFlagsEXT.GeneralBitExt,
                 PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT)DebugCallback
             };
+
+            var validationFeatureEnables = new ValidationFeatureEnableEXT[]
+            {
+                ValidationFeatureEnableEXT.DebugPrintfExt
+            };
+
+            fixed (ValidationFeatureEnableEXT* pEnabledFeatures = validationFeatureEnables)
+            {
+                var validationFeatures = new ValidationFeaturesEXT
+                {
+                    SType = StructureType.ValidationFeaturesExt,
+                    EnabledValidationFeatureCount = (uint)validationFeatureEnables.Length,
+                    PEnabledValidationFeatures = pEnabledFeatures
+                };
+
+                // Теперь validationFeatures можно использовать в дальнейшем коде
+            
+
 #endif
+
             var instanceInfo = new InstanceCreateInfo
             {
                 SType = StructureType.InstanceCreateInfo,
@@ -73,13 +94,14 @@ namespace BoidsVulkan
                 PpEnabledExtensionNames = pPEnabledInstanceExtensions,
                 PApplicationInfo = &appInfo,
 #if DEBUG
-                PNext = &debugInfo
+                PNext = &validationFeatures
 #endif
             };
             if (_vk.CreateInstance(ref instanceInfo, null, out _instance) != Result.Success)
                 throw new Exception("Instance could not be created");
+#if DEBUG            
+            }
 
-#if DEBUG
             if (!_vk.TryGetInstanceExtension(_instance, out _extDebugUtils))
                 throw new Exception($"Could not get instance extension {ExtDebugUtils.ExtensionName}");
             _extDebugUtils.CreateDebugUtilsMessenger(_instance, ref debugInfo, null, out _debugUtilsMessenger);
