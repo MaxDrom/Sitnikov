@@ -87,26 +87,31 @@ public partial class GameWindow : IDisposable
     Format format = Format.R16G16B16A16Sfloat;
     ColorSpaceKHR colorSpace = ColorSpaceKHR.SpaceSrgbNonlinearKhr;
 
-    public GameWindow(WindowOptions windowOptions, SymplecticIntegrator<double, Vector<double>> integrator)
+    public GameWindow(WindowOptions windowOptions, SymplecticIntegrator<double, Vector<double>> integrator, SitnikovConfig config)
     {
         this.integrator = integrator;
         this.windowOptions = windowOptions;
         window = Window.Create(windowOptions);
-        var grid = 80;
-        instances = new Instance[grid * grid + 1];
-        for (var xx = 0; xx < grid; xx++)
+        var gridX = config.SizeX;
+        var gridY = config.SizeY;
+        instances = new Instance[gridX * gridY + 1];
+        var dx = (float)(config.RangeX.Item2 - config.RangeX.Item1);
+        var dy = (float)(config.RangeY.Item2 - config.RangeY.Item1);
+        for (var xx = 0; xx < gridX; xx++)
         {
-            for (var yy = 0; yy < grid; yy++)
+            for (var yy = 0; yy < gridY; yy++)
             {
-                instances[xx + yy * grid] = new()
+                instances[xx + yy * gridX] = new()
                 {
-                    position = new Vector2D<float>(-0f + xx / (grid - 1f) * 0.5f, -0.0f + yy / (grid - 1f) * 0.5f),
-                    color = new Vector4D<float>(xx / (grid - 1f) * 1f, yy / (grid - 1f) * 1f, 1f, 1f),
+                    position = new Vector2D<float>((float)config.RangeX.Item1 
+                                    + xx / (gridX - 1f) * dx, (float)config.RangeY.Item1 
+                                        + yy / (gridY - 1f) * dy),
+                    color = new Vector4D<float>(xx / (gridX - 1f), yy / (gridY - 1f), 1f, 1f),
                     offset = new Vector2D<float>(0, 1)
                 };
             }
         }
-        instances[grid * grid] = new()
+        instances[gridX * gridY] = new()
         {
             position = Vector2D<float>.Zero,
             color = new Vector4D<float>(0, 0, 0, 1.0f),

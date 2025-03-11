@@ -10,7 +10,8 @@
         "dependencies": {
           "Silk.NET": "2.22.0",
           "Silk.NET.Vulkan.Extensions.EXT": "2.22.0",
-          "Silk.NET.Vulkan.Extensions.KHR": "2.22.0"
+          "Silk.NET.Vulkan.Extensions.KHR": "2.22.0",
+          "YamlDotNet": "16.3.0"
         },
         "runtime": {
           "Sitnikov.dll": {}
@@ -257,6 +258,14 @@
             "fileVersion": "0.0.0.0"
           }
         }
+      },
+      "YamlDotNet/16.3.0": {
+        "runtime": {
+          "lib/net8.0/YamlDotNet.dll": {
+            "assemblyVersion": "16.0.0.0",
+            "fileVersion": "16.3.0.0"
+          }
+        }
       }
     }
   },
@@ -440,6 +449,13 @@
       "sha512": "sha512-Iy22JopynbOJ32vA0lBhFEzGi65GQJBuJHYBYRBpydrDpNoTiHnjIXfA65Gu+8qsOr/ZEoIF8r9aHCgAXuO6DA==",
       "path": "ultz.native.glfw/3.4.0",
       "hashPath": "ultz.native.glfw.3.4.0.nupkg.sha512"
+    },
+    "YamlDotNet/16.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-SgMOdxbz8X65z8hraIs6hOEdnkH6hESTAIUa7viEngHOYaH+6q5XJmwr1+yb9vJpNQ19hCQY69xbFsLtXpobQA==",
+      "path": "yamldotnet/16.3.0",
+      "hashPath": "yamldotnet.16.3.0.nupkg.sha512"
     }
   }
 }

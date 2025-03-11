@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "tyac1/oSves=",
+  "dgSpecHash": "k5EOBf2KIFU=",
   "success": true,
   "projectFilePath": "/home/marks/Sitnikov/Sitnikov.csproj",
   "expectedPackageFiles": [
@@ -29,6 +29,7 @@
     "/home/marks/.nuget/packages/system.text.encodings.web/8.0.0/system.text.encodings.web.8.0.0.nupkg.sha512",
     "/home/marks/.nuget/packages/system.text.json/8.0.0/system.text.json.8.0.0.nupkg.sha512",
     "/home/marks/.nuget/packages/ultz.native.glfw/3.4.0/ultz.native.glfw.3.4.0.nupkg.sha512",
+    "/home/marks/.nuget/packages/yamldotnet/16.3.0/yamldotnet.16.3.0.nupkg.sha512",
     "/home/marks/.nuget/packages/microsoft.aspnetcore.app.ref/9.0.2/microsoft.aspnetcore.app.ref.9.0.2.nupkg.sha512"
   ],
   "logs": []

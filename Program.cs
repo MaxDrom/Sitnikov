@@ -1,8 +1,21 @@
 ﻿using System.Collections.Concurrent;
 using System.Globalization;
 using Silk.NET.Windowing;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace SymplecticIntegrators;
+
+
+public class SitnikovConfig
+{
+    public double e { get; set; } = 0.2;
+    public int SizeX { get; set; } = 50;
+    public int SizeY { get; set; } = 50;
+    public (double, double) RangeX { get; set; } = (0, 1);
+    public (double, double) RangeY { get; set; } = (0, 1);
+}
+
 
 class Program
 {
@@ -10,7 +23,7 @@ class Program
     public static ConcurrentDictionary<double, double> KeplerSolutions = new();
 
     public static double e = 0.1;
-    
+
     public static (double, double) SolveKeplerEq(double M)
     {
         var E = M;
@@ -34,9 +47,9 @@ class Program
         M %= 2 * Math.PI;
         if (M >= Math.PI)
             M -= 2 * Math.PI;
-        if(KeplerSolutions.TryGetValue(M, out var result))
+        if (KeplerSolutions.TryGetValue(M, out var result))
             return result;
-        
+
         var (E, sin) = SolveKeplerEq(M);
         var res = 1 - e * Math.Sqrt(1 - sin * sin);
         KeplerSolutions.TryAdd(M, res);
@@ -73,6 +86,15 @@ class Program
         CultureInfo.CurrentCulture = new CultureInfo("en-US", false);
         CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalDigits = 28;
         yoshida6 = YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(dV, dT, 2);
+        var deserializer = new DeserializerBuilder()
+                            .Build();
+
+        using var sr = File.OpenText("config.yaml");
+        var config = deserializer.Deserialize<SitnikovConfig>(sr);
+        e = config.e;
+
+
+
         // var taskList = new List<Task<(double, double)[]>>();
         // var grid = 100;
         // for (var x = 0; x < grid; x++)
@@ -98,7 +120,7 @@ class Program
         //     foreach (var (q, p) in res)
         //         file.WriteLine($"{q} {p}");
 
-        using var gameWindow = new GameWindow(WindowOptions.DefaultVulkan, yoshida6);
+        using var gameWindow = new GameWindow(WindowOptions.DefaultVulkan, yoshida6, config);
 
         gameWindow.Run();
     }
