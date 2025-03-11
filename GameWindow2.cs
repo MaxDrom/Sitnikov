@@ -177,7 +177,7 @@ public partial class GameWindow
                 ImageMemoryBarrier barrier2 = new()
                 {
                     SType = StructureType.ImageMemoryBarrier,
-                    OldLayout = ImageLayout.Undefined,
+                    OldLayout = ImageLayout.TransferDstOptimal,
                     NewLayout = ImageLayout.PresentSrcKhr,
                     SrcAccessMask = AccessFlags.TransferWriteBit,
                     DstAccessMask = AccessFlags.None,
