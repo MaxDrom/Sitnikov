@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Sitnikov")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cad42827e1077c17cbf4d304d8bcbb4a58198811")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f37a7cfd5dd317998aa8ec019297d06a3304c937")]
 [assembly: System.Reflection.AssemblyProductAttribute("Sitnikov")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Sitnikov")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

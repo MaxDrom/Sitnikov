@@ -14,6 +14,8 @@ public class SitnikovConfig
     public int SizeY { get; set; } = 50;
     public (double, double) RangeX { get; set; } = (0, 1);
     public (double, double) RangeY { get; set; } = (0, 1);
+
+    public bool PoincareMap = false;
 }
 
 
@@ -80,7 +82,7 @@ class Program
 
     static SymplecticIntegrator<double, Vector<double>> yoshida6;
 
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
         CultureInfo.CurrentCulture = new CultureInfo("en-US", false);
@@ -94,32 +96,39 @@ class Program
         e = config.e;
 
 
+        if (config.PoincareMap)
+        {
+            var taskList = new List<Task<(double, double)[]>>();
+            var gridX = config.SizeX;
+            var gridY = config.SizeY;
+            var dx = config.RangeX.Item2 - config.RangeX.Item1;
+            var dy = config.RangeY.Item2 - config.RangeY.Item1;
+            for (var x = 0; x < gridX; x++)
+            {
+                var q =  config.RangeX.Item1 + dx* x / (double)(gridX -1);
+                //var maxvel = Math.Sqrt(2 / Math.Sqrt(q * q + 1)) * 1.5;
+                for (var y = 0; y < gridY; y++)
+                {
+                    var p =  config.RangeY.Item1 + dx* y / (double)(gridY -1);
+                    //var p = -maxvel + 2 * maxvel * y / (double)grid;
+                    taskList.Add(
+                                Task.Run(() =>
+                                            PoincareMap(q,
+                                                        p,
+                                                        1000)
+                                        ));
 
-        // var taskList = new List<Task<(double, double)[]>>();
-        // var grid = 100;
-        // for (var x = 0; x < grid; x++)
-        // {
-        //     var q = -2.5 + 5 * x / (double)grid;
-        //     var maxvel = Math.Sqrt(2/Math.Sqrt(q*q+1))*1.5; 
-        //     for (var y = 0; y < grid; y++)
-        //     {
-        //         var p = -maxvel + 2 * maxvel * y / (double)grid;
-        //         taskList.Add(
-        //                     Task.Run(() =>
-        //                                 PoincareMap(q,
-        //                                             p,
-        //                                             1000)
-        //                             ));
+                }
+            }
+            var totalResults = await Task.WhenAll(taskList);
 
-        //     }
-        // }
-        // var totalResults = await Task.WhenAll(taskList);
+            using var file = new StreamWriter("result.dat");
+            foreach (var res in totalResults)
+                foreach (var (q, p) in res)
+                    file.WriteLine($"{q} {p}");
 
-        // using var file = new StreamWriter("result.dat");
-        // foreach (var res in totalResults)
-        //     foreach (var (q, p) in res)
-        //         file.WriteLine($"{q} {p}");
-
+            return;
+        }
         using var gameWindow = new GameWindow(WindowOptions.DefaultVulkan, yoshida6, config);
 
         gameWindow.Run();

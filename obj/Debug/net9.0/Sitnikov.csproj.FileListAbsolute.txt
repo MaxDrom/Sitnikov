@@ -40,3 +40,4 @@
 /home/marks/Sitnikov/obj/Debug/net9.0/Sitnikov.genruntimeconfig.cache
 /home/marks/Sitnikov/obj/Debug/net9.0/ref/Sitnikov.dll
 /home/marks/Sitnikov/bin/Debug/net9.0/YamlDotNet.dll
+/home/marks/Sitnikov/bin/Debug/net9.0/config.yaml
