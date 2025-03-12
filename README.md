@@ -4,7 +4,7 @@
 
 [Windows-x64 build](https://github.com/MaxDrom/Sitnikov/releases/download/latest/win-x64.zip)
 
-[Macos-arm64 build](https://github.com/MaxDrom/Sitnikov/releases/download/latest/osx-x64.zip)
+[Macos-arm64 build](https://github.com/MaxDrom/Sitnikov/releases/download/latest/osx-arm64.zip)
 
 # Getting started
 
