@@ -1,3 +1,14 @@
-[Linux-x64 binaries](/builds/linux-x64.zip);
-[Windows-x64 binaries](/builds/win-x64.zip);
-[macos-arm64 binaries](/builds/osx-arm64.zip);
+# Builds:
+
+[Linux-x64 build](/builds/linux-x64.zip)
+
+[Windows-x64 build](/builds/win-x64.zip)
+
+[Macos-arm64 build](/builds/osx-arm64.zip)
+
+# Getting started
+
+Unzip archive and run:
+```bash
+./Sitnikov
+```
