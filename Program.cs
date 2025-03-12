@@ -114,7 +114,7 @@ class Program
         var config = deserializer.Deserialize<SitnikovConfig>(sr);
         e = config.e;
         dt = config.Integrator.Timestep;
-        yoshida6 = YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(dV, dT, config.Integrator.Order);
+        yoshida6 = YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(dV, dT, config.Integrator.Order/2);
         if (config.Poincare != null)
         {
             var taskList = new List<Task<(double, double)[]>>();
