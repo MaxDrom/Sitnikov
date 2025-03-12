@@ -1,21 +1,12 @@
-e: 0.15
-SizeX: 1024
-SizeY: 1024
-RangeX:
+e: 0.12
+SizeX: 70
+SizeY: 70
+RangeX: 
   Item1: 0
-  Item2: 3
-RangeY:
+  Item2: 0.5
+RangeY: 
   Item1: 0
   Item2: 0.5
 Integrator:
-  Order: 6
+  Order: 2
   Timestep: 0.01
-Visualization:
-  OnGPU: true
-  Fade: 3
-  RangeX:
-    Item1: -5
-    Item2: 5
-  RangeY:
-    Item1: -3
-    Item2: 3

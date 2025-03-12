@@ -2,203 +2,175 @@ using System.Runtime.InteropServices;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Windowing;
-using Sitnikov.BoidsVulkan;
-
-namespace Sitnikov;
+using BoidsVulkan;
+using System.Numerics;
+namespace SymplecticIntegrators;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public struct Instance : IVertexData<Instance>
+struct Instance : IVertexData
 {
-    [VertexInputDescription(2, Format.R32G32Sfloat)]
+    [VertexAttributeDescription(2, Format.R32G32Sfloat)]
     public Vector2D<float> position;
-
-    [VertexInputDescription(4, Format.R32G32Sfloat)]
+    [VertexAttributeDescription(4, Format.R32G32Sfloat)]
     public Vector2D<float> offset;
 
-    [VertexInputDescription(3, Format.R32G32B32A32Sfloat)]
+    [VertexAttributeDescription(3, Format.R32G32B32A32Sfloat)]
     public Vector4D<float> color;
+
 }
 
-public sealed partial class GameWindow
+public partial class GameWindow
 {
-    private static Instance[] _instances;
+    SymplecticIntegrator<double, Vector<double>> integrator;
+    static Instance[] instances;
+    // Instance[] instances1 = [
+    //     new()
+    //     {
+    //         position = new Vector2D<float>(0, 0),
+    //         color = new Vector4D<float>(0, 0, 0, 1.0f)
+    //     }
+    // ];
 
-    private readonly uint[] _indices = [0, 1, 2, 2, 3, 0];
-
-    private readonly Vertex[] _quadVertices =
-    [
-        new()
-        {
-            position = new Vector2D<float>(-1f, -1f),
-            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f),
-        },
-
-        new()
-        {
-            position = new Vector2D<float>(1f, -1f),
-            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f),
-        },
-
-        new()
-        {
-            position = new Vector2D<float>(1f, 1f),
-            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f),
-        },
-
-        new()
-        {
-            position = new Vector2D<float>(-1f, 1f),
-            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f),
-        },
-    ];
-
-    private readonly Vertex[] _vertices =
+    Vertex[] vertices =
     [
         new()
         {
             position = new Vector2D<float>(-0.003f, -0.003f),
-            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f),
+            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
         },
 
         new()
         {
             position = new Vector2D<float>(0.003f, -0.003f),
-            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f),
+            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
         },
 
         new()
         {
             position = new Vector2D<float>(0.003f, 0.003f),
-            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f),
+            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
         },
 
         new()
         {
             position = new Vector2D<float>(-0.003f, 0.003f),
-            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f),
+            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
         },
     ];
 
-    private bool _firstRun = true;
-    private uint _imageIndex;
-    
-    private double _totalTime;
+    Vertex[] quadVertices =
+    [
+        new()
+        {
+            position = new Vector2D<float>(-1f, -1f),
+            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f)
+        },
+
+        new()
+        {
+            position = new Vector2D<float>(1f, -1f),
+            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f)
+        },
+
+        new()
+        {
+            position = new Vector2D<float>(1f, 1f),
+            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f)
+        },
+
+        new()
+        {
+            position = new Vector2D<float>(-1f, 1f),
+            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f)
+        },
+    ];
+
+    uint[] indices = [0, 1, 2, 2, 3, 0];
 
     public void Run()
     {
-        _window.Run();
+        window.Run();
     }
 
-    private void RecordBuffer(VkCommandBuffer buffer, int imageIndex)
+    void RecordBuffer(VkCommandBuffer buffer, int imageIndex)
     {
         Viewport viewport = new()
         {
             X = 0.0f,
             Y = 0.0f,
-            Width = _swapchain.Extent.Width,
-            Height = _swapchain.Extent.Height,
+            Width = swapchain.Extent.Width,
+            Height = swapchain.Extent.Height
         };
-        Rect2D scissor = new(new Offset2D(0, 0), _swapchain.Extent);
+        Rect2D scissor = new(new Offset2D(0, 0), swapchain.Extent);
         buffer.Reset(CommandBufferResetFlags.None);
-        using (var recording =
-               buffer.Begin(CommandBufferUsageFlags.None))
+        using (var recording = buffer.Begin(CommandBufferUsageFlags.None))
         {
-            var subresourceRange =
-                new ImageSubresourceRange(ImageAspectFlags.ColorBit,
-                    0, 1, 0, 1);
-
-            ImageMemoryBarrier bb = new()
+            var subresourceRange = new ImageSubresourceRange(ImageAspectFlags.ColorBit, 0, 1, 0, 1);
+            unsafe
             {
-                SType = StructureType.ImageMemoryBarrier,
-                OldLayout = ImageLayout.Undefined,
-                NewLayout = ImageLayout.General,
-                SrcAccessMask = AccessFlags.None,
-                DstAccessMask = AccessFlags.MemoryReadBit,
-                Image = _textureBuffer.Image.Image,
-                SubresourceRange = subresourceRange,
-            };
-
-            recording.PipelineBarrier(PipelineStageFlags.TopOfPipeBit,
-                PipelineStageFlags.ColorAttachmentOutputBit,
-                DependencyFlags.None, imageMemoryBarriers: [bb]);
-
-            using (var renderRecording =
-                   recording.BeginRenderPass(_renderPass,
-                       _frameBuffers[0], scissor))
-            {
-                var pushConstant2 = new PushConstant
+                ImageMemoryBarrier bb = new()
                 {
-                    xrange = new Vector2D<float>(-1, 1),
-                    yrange = new Vector2D<float>(-1, 1),
+                    SType = StructureType.ImageMemoryBarrier,
+                    OldLayout = ImageLayout.Undefined,
+                    NewLayout = ImageLayout.General,
+                    SrcAccessMask = AccessFlags.None,
+                    DstAccessMask = AccessFlags.MemoryReadBit,
+                    Image = textureBuffer.Image.Image,
+                    SubresourceRange = subresourceRange
                 };
 
-                recording.BindPipline(_graphicsPipeline);
-                _ctx.Api.CmdPushConstants(buffer.Buffer,
-                    _graphicsPipeline.PipelineLayout,
-                    ShaderStageFlags.VertexBit, 0,
-                    (uint)Marshal.SizeOf<PushConstant>(),
-                    ref pushConstant2);
+                ctx.Api.CmdPipelineBarrier(buffer.InternalBuffer,
+                                PipelineStageFlags.TopOfPipeBit,
+                                PipelineStageFlags.ColorAttachmentOutputBit, 0, 0, null, 0, null, 1, ref bb);
 
-                recording.BindVertexBuffers(0,
-                    [_quadVertexBuffer, _quadInstanceBuffer], [0, 0]);
-                recording.BindIndexBuffer(_indexBuffer, 0,
-                    IndexType.Uint32);
-                renderRecording.SetViewport(ref viewport);
-                renderRecording.SetScissor(ref scissor);
-                renderRecording.DrawIndexed((uint)_indices.Length, 1u,
-                    0, 0);
-                var pushConstant = new PushConstant
-                {
-                    xrange =
-                        new Vector2D<float>(
-                            (float)_config.Visualization.RangeX
-                                .Item1,
-                            (float)_config.Visualization.RangeX
-                                .Item2),
-                    yrange = new Vector2D<float>(
-                        (float)_config.Visualization.RangeY.Item1,
-                        (float)_config.Visualization.RangeY.Item2),
-                };
-                _ctx.Api.CmdPushConstants(buffer.Buffer,
-                    _graphicsPipeline.PipelineLayout,
-                    ShaderStageFlags.VertexBit, 0,
-                    (uint)Marshal.SizeOf<PushConstant>(),
-                    ref pushConstant);
-                recording.BindVertexBuffers(0,
-                    [_vertexBuffer, _instanceBuffer], [0, 0]);
-                renderRecording.SetViewport(ref viewport);
-                renderRecording.SetScissor(ref scissor);
-                renderRecording.DrawIndexed((uint)_indices.Length,
-                    (uint)_instances.Length - 1, 0, 0);
+
             }
 
-            var region = new ImageCopy
+            using (var renderRecording = recording.BeginRenderPass(renderPass, framebuffers[0], scissor))
+            {
+
+                recording.BindPipline(graphicsPipeline);
+
+                recording.BindVertexBuffers(0, [quadVertexBuffer, instanceBuffer],
+                                               [0,
+                                                    (ulong)Marshal.SizeOf<Instance>()*
+                                                    (ulong)(instances.Length - 1)]);
+                recording.BindIndexBuffer(indexBuffer, 0, IndexType.Uint32);
+                renderRecording.SetViewport(ref viewport);
+                renderRecording.SetScissor(ref scissor);
+                //renderRecording.SetBlendConstant(blendFactors);
+                renderRecording.DrawIndexed((uint)indices.Length, 1u, 0, 0);
+
+                recording.BindVertexBuffers(0, [vertexBuffer, instanceBuffer], [0, 0]);
+                recording.BindIndexBuffer(indexBuffer, 0, IndexType.Uint32);
+                renderRecording.SetViewport(ref viewport);
+                renderRecording.SetScissor(ref scissor);
+                //renderRecording.SetBlendConstant(blendFactor2);
+                renderRecording.DrawIndexed((uint)indices.Length, (uint)instances.Length - 1, 0, 0);
+
+            }
+
+            ImageCopy region = new ImageCopy()
             {
                 SrcOffset = new Offset3D(0, 0, 0),
                 DstOffset = new Offset3D(0, 0, 0),
-                Extent =
-                    new Extent3D(_swapchain.Extent.Width,
-                        _swapchain.Extent.Height, 1),
-                SrcSubresource =
-                    new ImageSubresourceLayers(
-                        ImageAspectFlags.ColorBit, 0, 0, 1),
-                DstSubresource =
-                    new ImageSubresourceLayers(
-                        ImageAspectFlags.ColorBit, 0, 0, 1),
+                Extent = new Extent3D(swapchain.Extent.Width, swapchain.Extent.Height, 1),
+                SrcSubresource = new ImageSubresourceLayers(ImageAspectFlags.ColorBit, 0, 0, 1),
+                DstSubresource = new ImageSubresourceLayers(ImageAspectFlags.ColorBit, 0, 0, 1)
             };
 
-            ImageMemoryBarrier[] barriers =
-            [
-                new()
+
+            unsafe
+            {
+                ImageMemoryBarrier[] barrier = [new()
                 {
                     SType = StructureType.ImageMemoryBarrier,
                     OldLayout = ImageLayout.Undefined,
                     NewLayout = ImageLayout.TransferSrcOptimal,
-                    SrcAccessMask =
-                        AccessFlags.ColorAttachmentWriteBit,
+                    SrcAccessMask = AccessFlags.ColorAttachmentWriteBit,
                     DstAccessMask = AccessFlags.TransferReadBit,
-                    Image = _textureBuffer.Image.Image,
-                    SubresourceRange = subresourceRange,
+                    Image = textureBuffer.Image.Image,
+                    SubresourceRange = subresourceRange
                 },
 
                 new()
@@ -208,117 +180,153 @@ public sealed partial class GameWindow
                     NewLayout = ImageLayout.TransferDstOptimal,
                     SrcAccessMask = AccessFlags.None,
                     DstAccessMask = AccessFlags.TransferWriteBit,
-                    Image = _swapchain.Images[imageIndex].Image,
-                    SubresourceRange = subresourceRange,
-                },
-            ];
+                    Image = swapchain.Images[imageIndex].Image,
+                    SubresourceRange = subresourceRange
+                }
 
-            recording.PipelineBarrier(
-                PipelineStageFlags.ColorAttachmentOutputBit,
-                PipelineStageFlags.TransferBit, DependencyFlags.None,
-                imageMemoryBarriers: barriers);
+                ];
+                fixed (ImageMemoryBarrier* barrierPtr = barrier)
+                {
+                    ctx.Api.CmdPipelineBarrier(buffer.InternalBuffer,
+                    PipelineStageFlags.ColorAttachmentOutputBit,
+                    PipelineStageFlags.TransferBit, 0, 0, null, 0, null, 2, barrierPtr);
+                }
 
-            _ctx.Api.CmdCopyImage(buffer.Buffer,
-                _textureBuffer.Image.Image,
-                ImageLayout.TransferSrcOptimal,
-                _swapchain.Images[imageIndex].Image,
-                ImageLayout.TransferDstOptimal, 1, in region);
+                ctx.Api.CmdCopyImage(buffer.InternalBuffer, textureBuffer.Image.Image, ImageLayout.TransferSrcOptimal, swapchain.Images[imageIndex].Image, ImageLayout.TransferDstOptimal, 1, ref region);
 
-            ImageMemoryBarrier barrier2 = new()
-            {
-                SType = StructureType.ImageMemoryBarrier,
-                OldLayout = ImageLayout.TransferDstOptimal,
-                NewLayout = ImageLayout.PresentSrcKhr,
-                SrcAccessMask = AccessFlags.TransferWriteBit,
-                DstAccessMask = AccessFlags.None,
-                Image = _swapchain.Images[imageIndex].Image,
-                SubresourceRange = subresourceRange,
-            };
+                ImageMemoryBarrier barrier2 = new()
+                {
+                    SType = StructureType.ImageMemoryBarrier,
+                    OldLayout = ImageLayout.TransferDstOptimal,
+                    NewLayout = ImageLayout.PresentSrcKhr,
+                    SrcAccessMask = AccessFlags.TransferWriteBit,
+                    DstAccessMask = AccessFlags.None,
+                    Image = swapchain.Images[imageIndex].Image,
+                    SubresourceRange = subresourceRange
+                };
 
-            recording.PipelineBarrier(PipelineStageFlags.TransferBit,
-                PipelineStageFlags.BottomOfPipeBit,
-                DependencyFlags.None,
-                imageMemoryBarriers: [barrier2]);
+
+                ctx.Api.CmdPipelineBarrier(buffer.InternalBuffer,
+                PipelineStageFlags.TransferBit,
+                PipelineStageFlags.BottomOfPipeBit, 0, 0, null, 0, null, 1, ref barrier2);
+            }
         }
     }
 
-    private void OnResize(Vector2D<int> x)
+    void OnResize(Vector2D<int> x)
     {
-        _windowOptions.Size = x;
-        _ctx.Api.DeviceWaitIdle(_device.Device);
+        windowOptions.Size = x;
+        ctx.Api.DeviceWaitIdle(device.Device);
         CleanUpSwapchain();
 
         CreateSwapchain();
         CreateViews();
-        CreateFrameBuffers();
+        CreateFramebuffers();
 
-        for (var i = 0; i < _views.Count; i++)
-            RecordBuffer(_buffers[i], i);
+        for (var i = 0; i < views.Count; i++)
+        {
+            RecordBuffer(buffers[i], i);
+        }
+    }
+    double totalTime = 0;
+    Vector2D<float> ComplexMul(Vector2D<float> a, Vector2D<float> b)
+    {
+        return new Vector2D<float>(a.X * b.X - a.Y * b.Y, a.X * b.Y + b.X * a.Y);
     }
 
-    private async Task OnUpdate(double frameTime)
+    Vector2D<float> Step(Vector2D<float> pos, double frametime, double totalTime)
     {
-        if (_firstRun)
+        var (q, p) = integrator.Step(new Vector<double>([pos[0] * 2.5, totalTime]), new Vector<double>([pos[1] * 2.5, 0]), frametime);
+        return new Vector2D<float>((float)q[0] / 2.5f, (float)p[0] / 2.5f);
+    }
+    uint imageIndex;
+    Task[] taskList;
+    VkMappedMemory<Instance> mapped;
+    async Task OnUpdate(double frametime)
+    {
+
+        // int maxFPS = 200;
+        // double minFrametime = 1.0 / (double)maxFPS;
+        // if (frametime < minFrametime)
+        // {
+        //     await Task.Delay((int)(1000 * minFrametime - 1000 * frametime));
+        //     frametime = minFrametime;
+        // }
+
+        if (staggingVertex == null)
         {
-            _firstRun = false;
-            _copyBuffer.Reset(CommandBufferResetFlags.None);
-            using (var recording =
-                   _copyBuffer.Begin(CommandBufferUsageFlags
-                       .SimultaneousUseBit))
+            taskList = new Task[instances.Length - 1];
+            staggingVertex = new VkBuffer((ulong)instances.Length * (ulong)Marshal.SizeOf<Instance>(), BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive, staggingAllocator);
+            copyBuffer.Reset(CommandBufferResetFlags.None);
+            using (var recording = copyBuffer.Begin(CommandBufferUsageFlags.SimultaneousUseBit))
             {
-                recording.CopyBuffer(_particleSystem.Buffer,
-                    _instanceBuffer, 0, 0,
-                    _particleSystem.Buffer.Size);
+                recording.CopyBuffer(staggingVertex, instanceBuffer, 0, 0, staggingVertex.Size);
             }
 
-            _totalTime = 0;
-            return;
+            mapped = staggingVertex.Map<Instance>(0, instances.Length);
         }
 
-        using (var mapped = _quadInstanceBuffer.Map(0, 1))
+        totalFrametime += frametime;
+        FPS++;
+        if (totalFrametime >= 1)
         {
-            mapped[0] = new Instance
+            window.Title = $"FPS: {FPS / totalFrametime}";
+            totalFrametime = 0;
+            FPS = 0;
+
+        }
+
+
+
+        for (var i = 0; i < instances.Length - 1; i++)
+        {
+            var pos = instances[i].position;
+            var col = instances[i].color;
+            var tmpi = i;
+            taskList[i] = Task.Run(() =>
             {
-                position = Vector2D<float>.Zero,
-                color = new Vector4D<float>(0, 0, 0,
-                    1.0f - (float)Math.Exp(
-                        -_config.Visualization.Fade * frameTime)),
-                offset = new Vector2D<float>(0, 1),
-            };
+
+                var newpos = Step(pos, frametime, totalTime);
+                instances[tmpi].position = newpos;
+                instances[tmpi].offset = newpos - pos;
+            });
         }
 
-        _totalFrameTime += frameTime;
-        _fps++;
-        if (_totalFrameTime >= 1)
+
+        await Task.WhenAll(taskList);
+
+
+        totalTime += frametime;
+
+
+        for (var i = 0; i < instances.Length - 1; i++)
         {
-            _window.Title = $"FPS: {_fps / _totalFrameTime}";
-            _totalFrameTime = 0;
-            _fps = 0;
+            mapped[i] = instances[i];
         }
+        mapped[instances.Length - 1] = new Instance()
+        {
+            position = Vector2D<float>.Zero,
+            offset = new Vector2D<float>(0, 1),
+            color = new Vector4D<float>(0, 0, 0, 1 - (float)Math.Exp(-frametime*5))
+        };
 
-        await _particleSystem.Update(frameTime, _totalTime);
-        _totalTime += frameTime;
-        _copyFence.Reset();
-        _copyBuffer.Submit(_device.GraphicsQueue, _copyFence, [], []);
-        await _copyFence.WaitFor();
+
+        copyFence.Reset();
+        copyBuffer.Submit(device.GraphicsQueue, copyFence,
+                                            waitSemaphores: [],
+                                            signalSemaphores: []);
+        await copyFence.WaitFor();
     }
-
-    private void OnRender(double frameTime)
+    void OnRender(double frametime)
     {
-        _fences[_frameIndex].WaitFor().GetAwaiter().GetResult();
-        if (_swapchain.AcquireNextImage(_device,
-                _imageAvailableSemaphores[_frameIndex],
-                out _imageIndex) == Result.ErrorOutOfDateKhr)
+        fences[frameIndex].WaitFor().GetAwaiter().GetResult();
+        if (swapchain.AcquireNextImage(device, imageAvailableSemaphores[frameIndex], out imageIndex) == Result.ErrorOutOfDateKhr)
             return;
-
-        _fences[_frameIndex].Reset();
-        _buffers[_imageIndex].Submit(_device.GraphicsQueue,
-            _fences[_frameIndex],
-            [_imageAvailableSemaphores[_frameIndex]],
-            [_renderFinishedSemaphores[_frameIndex]]);
-        _swapchainCtx.QueuePresent(_device.PresentQueue,
-            [_imageIndex],
-            [_swapchain], [_renderFinishedSemaphores[_frameIndex]]);
-        _frameIndex = ++_frameIndex % _framesInFlight;
+        fences[frameIndex].Reset();
+        buffers[imageIndex].Submit(device.GraphicsQueue, fences[frameIndex],
+                waitSemaphores: [imageAvailableSemaphores[frameIndex]],
+                signalSemaphores: [renderFinishedSemaphores[frameIndex]]);
+        swapchainCtx.QueuePresent(device.PresentQueue, [imageIndex], [swapchain], [renderFinishedSemaphores[frameIndex]]);
+        frameIndex = (++frameIndex) % framesInFlight;
     }
 }
