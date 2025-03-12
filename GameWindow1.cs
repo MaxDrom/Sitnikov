@@ -306,7 +306,7 @@ public partial class GameWindow : IDisposable
             Dictionary<PresentModeKHR, int> desired = new();
             desired[PresentModeKHR.MailboxKhr] = 10;
             desired[PresentModeKHR.ImmediateKhr] = 5;
-            desired[PresentModeKHR.FifoKhr] = 20;
+            desired[PresentModeKHR.FifoKhr] = 1;
             for (var i = 0; i < n; i++)
             {
                 if (desired.TryGetValue(presentModes[i], out var ss) && ss > score)
