@@ -86,11 +86,12 @@ public partial class GameWindow : IDisposable
     private bool disposedValue;
     Format format = Format.R16G16B16A16Sfloat;
     ColorSpaceKHR colorSpace = ColorSpaceKHR.SpaceSrgbNonlinearKhr;
-
+    SitnikovConfig config;
     public GameWindow(WindowOptions windowOptions, SymplecticIntegrator<double, Vector<double>> integrator, SitnikovConfig config)
     {
         this.integrator = integrator;
         this.windowOptions = windowOptions;
+        this.config = config;
         window = Window.Create(windowOptions);
         var gridX = config.SizeX;
         var gridY = config.SizeY;

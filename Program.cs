@@ -15,6 +15,7 @@ public class SitnikovConfig
     public (double, double) RangeY { get; set; } = (0, 1);
     
     public IntegratorConfig Integrator{get;set;} = new IntegratorConfig();
+    public VisualizationConfig Visualization {get; set;} = new VisualizationConfig();
     public PoincareConfig Poincare{get; set;} = null;
 
     
@@ -31,6 +32,12 @@ public class PoincareConfig
     public int Periods {get; set;} = 10;
 }
 
+public class VisualizationConfig
+{
+    public double Fade {get; set;} = 5;
+    public (double, double) RangeX {get; set;} = (-2.5, 2.5);
+    public (double, double) RangeY {get; set;} = (-2.5, 2.5);
+}
 class Program
 {
 

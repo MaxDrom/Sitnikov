@@ -23,13 +23,7 @@ public partial class GameWindow
 {
     SymplecticIntegrator<double, Vector<double>> integrator;
     static Instance[] instances;
-    // Instance[] instances1 = [
-    //     new()
-    //     {
-    //         position = new Vector2D<float>(0, 0),
-    //         color = new Vector4D<float>(0, 0, 0, 1.0f)
-    //     }
-    // ];
+
 
     Vertex[] vertices =
     [
@@ -236,8 +230,11 @@ public partial class GameWindow
 
     Vector2D<float> Step(Vector2D<float> pos, double frametime, double totalTime)
     {
-        var (q, p) = integrator.Step(new Vector<double>([pos[0] * 2.5, totalTime]), new Vector<double>([pos[1] * 2.5, 0]), frametime);
-        return new Vector2D<float>((float)q[0] / 2.5f, (float)p[0] / 2.5f);
+        var (xmin, xmax) = config.Visualization.RangeX;
+        var (ymin, ymax) = config.Visualization.RangeY;
+        var (q, p) = integrator.Step(new Vector<double>([(pos[0] + 1.0)/2.0*(xmax-xmin)+xmin, totalTime]), new Vector<double>([(pos[1]+1)/2.0 * (ymax-ymin) + ymin, 0]), frametime);
+        return new Vector2D<float>((float)((q[0]-xmin)/(xmax-xmin)*2) - 1f, 
+                    (float)((p[0]-ymin)/(ymax-ymin)*2) - 1f);
     }
     uint imageIndex;
     Task[] taskList;
@@ -245,13 +242,13 @@ public partial class GameWindow
     async Task OnUpdate(double frametime)
     {
 
-        // int maxFPS = 200;
-        // double minFrametime = 1.0 / (double)maxFPS;
-        // if (frametime < minFrametime)
-        // {
-        //     await Task.Delay((int)(1000 * minFrametime - 1000 * frametime));
-        //     frametime = minFrametime;
-        // }
+        int maxFPS = 200;
+        double minFrametime = 1.0 / (double)maxFPS;
+        if (frametime < minFrametime)
+        {
+            await Task.Delay((int)(1000 * minFrametime - 1000 * frametime));
+            frametime = minFrametime;
+        }
 
         if (staggingVertex == null)
         {
@@ -307,7 +304,7 @@ public partial class GameWindow
         {
             position = Vector2D<float>.Zero,
             offset = new Vector2D<float>(0, 1),
-            color = new Vector4D<float>(0, 0, 0, 1 - (float)Math.Exp(-frametime*5))
+            color = new Vector4D<float>(0, 0, 0, 1 - (float)Math.Exp(-frametime*config.Visualization.Fade))
         };
 
 
