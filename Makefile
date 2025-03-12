@@ -10,9 +10,11 @@ run: base.vert.spv base.frag.spv
 build: win-x64.zip linux-x64.zip osx-arm64.zip
 
 %.zip: 
+	mkdir -p builds
 	dotnet publish --self-contained -r $(basename $@)
 	cp -r bin/Release/net9.0/$(basename $@)/publish builds/$(basename $@)
-	zip builds/$@ builds/$(basename $@)/**
+	cd builds/$(basename $@); zip -r $@ ./**
+	mv builds/$(basename $@)/$@ builds
 	rm -rf builds/$(basename $@)
 
 .PHONY: run build
