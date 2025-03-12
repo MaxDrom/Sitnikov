@@ -13,11 +13,23 @@ public class SitnikovConfig
     public int SizeY { get; set; } = 50;
     public (double, double) RangeX { get; set; } = (0, 1);
     public (double, double) RangeY { get; set; } = (0, 1);
+    
+    public IntegratorConfig Integrator{get;set;} = new IntegratorConfig();
+    public PoincareConfig Poincare{get; set;} = null;
 
-    public bool PoincareMap = false;
-    public int PoincareMapCount {get; set;} 
+    
 }
 
+public class IntegratorConfig
+{
+    public int Order {get; set;} = 2;
+    public double Timestep {get; set;} = 0.01;
+}
+
+public class PoincareConfig
+{
+    public int Periods {get; set;} = 10;
+}
 
 class Program
 {
@@ -25,6 +37,7 @@ class Program
     public static ConcurrentDictionary<double, double> KeplerSolutions = new();
 
     public static double e = 0.1;
+    public static double dt = 0.01;
 
     public static (double, double) SolveKeplerEq(double M)
     {
@@ -87,16 +100,15 @@ class Program
         ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
         CultureInfo.CurrentCulture = new CultureInfo("en-US", false);
         CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalDigits = 28;
-        yoshida6 = YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(dV, dT, 2);
         var deserializer = new DeserializerBuilder()
                             .Build();
 
         using var sr = File.OpenText("config.yaml");
         var config = deserializer.Deserialize<SitnikovConfig>(sr);
         e = config.e;
-
-
-        if (config.PoincareMap)
+        dt = config.Integrator.Timestep;
+        yoshida6 = YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(dV, dT, config.Integrator.Order);
+        if (config.Poincare != null)
         {
             var taskList = new List<Task<(double, double)[]>>();
             var gridX = config.SizeX;
@@ -113,7 +125,7 @@ class Program
                                 Task.Run(() =>
                                             PoincareMap(q,
                                                         p,
-                                                        config.PoincareMapCount)
+                                                        config.Poincare.Periods)
                                         ));
 
                 }
@@ -143,7 +155,7 @@ class Program
 
             foreach (var (t, q, p) in yoshida6
                                     .Integrate(Math.PI * 2,
-                                        0.01,
+                                        dt,
                                         new([qq, 0]),
                                         new([pp, 0])))
             {

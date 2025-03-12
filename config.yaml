@@ -7,5 +7,6 @@ RangeX:
 RangeY: 
   Item1: 0
   Item2: 0.5
-PoincareMap: false
-PoincareMapCount: 10
+Integrator:
+  Order: 2
+  Timestep: 0.01
