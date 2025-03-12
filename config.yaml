@@ -10,3 +10,11 @@ RangeY:
 Integrator:
   Order: 2
   Timestep: 0.01
+Visualization:
+  Fade: 3
+  RangeX:
+    Item1: -3
+    Item2: 3
+  RangeY:
+    Item1: -3
+    Item2: 3
