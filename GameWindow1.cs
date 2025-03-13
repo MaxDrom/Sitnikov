@@ -376,10 +376,12 @@ public partial class GameWindow : IDisposable
                 SrcAccessMask = 0,
                 DstAccessMask = AccessFlags.TransferWriteBit
             };
-            unsafe
-            {
-                ctx.Api.CmdPipelineBarrier(copyBuffer.InternalBuffer, PipelineStageFlags.TopOfPipeBit, PipelineStageFlags.TransferBit, 0, 0, null, 0, null, 1, ref barrier);
-            }
+
+            recording.PipelineBarrier(PipelineStageFlags.TopOfPipeBit,
+                                    PipelineStageFlags.TransferBit,
+                                    DependencyFlags.None,
+                                    imageMemoryBarriers: [barrier]);
+
             ctx.Api.CmdCopyBufferToImage(copyBuffer.InternalBuffer, staggingBuffer.Buffer, textureBuffer.Image.Image, ImageLayout.General, new ReadOnlySpan<BufferImageCopy>(ref copyRegion));
         }
         copyBuffer.Submit(device.TransferQueue, VkFence.NullHandle, [], []);

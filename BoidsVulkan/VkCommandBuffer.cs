@@ -133,7 +133,38 @@ public class VkCommandBuffer
             }
         }
 
+        public void PipelineBarrier(PipelineStageFlags srcStageFlags,
+                                    PipelineStageFlags dstStageFlags,
+                                    DependencyFlags dependencyFlags,
+                                    MemoryBarrier[] memoryBarriers = null,
+                                    BufferMemoryBarrier[] bufferMemoryBarriers = null,
+                                    ImageMemoryBarrier[] imageMemoryBarriers = null)
+        {
 
+            unsafe
+            {
+                fixed (MemoryBarrier* pmem = memoryBarriers)
+                {
+                    fixed (ImageMemoryBarrier* pmemImage = imageMemoryBarriers)
+                    {
+                        fixed (BufferMemoryBarrier* pmemBuffer = bufferMemoryBarriers)
+                        {
+                            _ctx.Api.CmdPipelineBarrier(_buffer.InternalBuffer,
+                                            srcStageFlags,
+                                            dstStageFlags,
+                                            dependencyFlags,
+                                            (uint)(memoryBarriers?.Length ?? 0),
+                                            pmem,
+                                            (uint)(bufferMemoryBarriers?.Length ?? 0),
+                                            pmemBuffer,
+                                            (uint)(imageMemoryBarriers?.Length ?? 0),
+                                            pmemImage
+                                            );
+                        }
+                    }
+                }
+            }
+        }
 
         public void BindIndexBuffer(VkBuffer buffer, ulong offset, IndexType indexType)
         {

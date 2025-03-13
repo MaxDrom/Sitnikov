@@ -17,8 +17,6 @@ public class SitnikovConfig
     public IntegratorConfig Integrator{get;set;} = new IntegratorConfig();
     public VisualizationConfig Visualization {get; set;} = new VisualizationConfig();
     public PoincareConfig Poincare{get; set;} = null;
-
-    
 }
 
 public class IntegratorConfig

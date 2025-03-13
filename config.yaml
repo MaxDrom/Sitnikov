@@ -8,7 +8,7 @@ RangeY:
   Item1: 0
   Item2: 0.5
 Integrator:
-  Order: 2
+  Order: 4
   Timestep: 0.01
 Visualization:
   Fade: 3

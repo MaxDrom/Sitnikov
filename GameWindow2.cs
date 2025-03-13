@@ -100,25 +100,23 @@ public partial class GameWindow
         using (var recording = buffer.Begin(CommandBufferUsageFlags.None))
         {
             var subresourceRange = new ImageSubresourceRange(ImageAspectFlags.ColorBit, 0, 1, 0, 1);
-            unsafe
+
+            ImageMemoryBarrier bb = new()
             {
-                ImageMemoryBarrier bb = new()
-                {
-                    SType = StructureType.ImageMemoryBarrier,
-                    OldLayout = ImageLayout.Undefined,
-                    NewLayout = ImageLayout.General,
-                    SrcAccessMask = AccessFlags.None,
-                    DstAccessMask = AccessFlags.MemoryReadBit,
-                    Image = textureBuffer.Image.Image,
-                    SubresourceRange = subresourceRange
-                };
+                SType = StructureType.ImageMemoryBarrier,
+                OldLayout = ImageLayout.Undefined,
+                NewLayout = ImageLayout.General,
+                SrcAccessMask = AccessFlags.None,
+                DstAccessMask = AccessFlags.MemoryReadBit,
+                Image = textureBuffer.Image.Image,
+                SubresourceRange = subresourceRange
+            };
 
-                ctx.Api.CmdPipelineBarrier(buffer.InternalBuffer,
-                                PipelineStageFlags.TopOfPipeBit,
-                                PipelineStageFlags.ColorAttachmentOutputBit, 0, 0, null, 0, null, 1, ref bb);
-
-
-            }
+            recording.PipelineBarrier(
+                            PipelineStageFlags.TopOfPipeBit,
+                            PipelineStageFlags.ColorAttachmentOutputBit,
+                            DependencyFlags.None,
+                            imageMemoryBarriers: [bb]);
 
             using (var renderRecording = recording.BeginRenderPass(renderPass, framebuffers[0], scissor))
             {
@@ -153,10 +151,7 @@ public partial class GameWindow
                 DstSubresource = new ImageSubresourceLayers(ImageAspectFlags.ColorBit, 0, 0, 1)
             };
 
-
-            unsafe
-            {
-                ImageMemoryBarrier[] barrier = [new()
+            ImageMemoryBarrier[] barriers = [new()
                 {
                     SType = StructureType.ImageMemoryBarrier,
                     OldLayout = ImageLayout.Undefined,
@@ -178,34 +173,36 @@ public partial class GameWindow
                     SubresourceRange = subresourceRange
                 }
 
-                ];
-                fixed (ImageMemoryBarrier* barrierPtr = barrier)
-                {
-                    ctx.Api.CmdPipelineBarrier(buffer.InternalBuffer,
-                    PipelineStageFlags.ColorAttachmentOutputBit,
-                    PipelineStageFlags.TransferBit, 0, 0, null, 0, null, 2, barrierPtr);
-                }
+            ];
 
-                ctx.Api.CmdCopyImage(buffer.InternalBuffer, textureBuffer.Image.Image, ImageLayout.TransferSrcOptimal, swapchain.Images[imageIndex].Image, ImageLayout.TransferDstOptimal, 1, ref region);
-
-                ImageMemoryBarrier barrier2 = new()
-                {
-                    SType = StructureType.ImageMemoryBarrier,
-                    OldLayout = ImageLayout.TransferDstOptimal,
-                    NewLayout = ImageLayout.PresentSrcKhr,
-                    SrcAccessMask = AccessFlags.TransferWriteBit,
-                    DstAccessMask = AccessFlags.None,
-                    Image = swapchain.Images[imageIndex].Image,
-                    SubresourceRange = subresourceRange
-                };
+            recording.PipelineBarrier(
+            PipelineStageFlags.ColorAttachmentOutputBit,
+            PipelineStageFlags.TransferBit,
+            DependencyFlags.None,
+            imageMemoryBarriers: barriers);
 
 
-                ctx.Api.CmdPipelineBarrier(buffer.InternalBuffer,
-                PipelineStageFlags.TransferBit,
-                PipelineStageFlags.BottomOfPipeBit, 0, 0, null, 0, null, 1, ref barrier2);
-            }
+            ctx.Api.CmdCopyImage(buffer.InternalBuffer, textureBuffer.Image.Image, ImageLayout.TransferSrcOptimal, swapchain.Images[imageIndex].Image, ImageLayout.TransferDstOptimal, 1, ref region);
+
+            ImageMemoryBarrier barrier2 = new()
+            {
+                SType = StructureType.ImageMemoryBarrier,
+                OldLayout = ImageLayout.TransferDstOptimal,
+                NewLayout = ImageLayout.PresentSrcKhr,
+                SrcAccessMask = AccessFlags.TransferWriteBit,
+                DstAccessMask = AccessFlags.None,
+                Image = swapchain.Images[imageIndex].Image,
+                SubresourceRange = subresourceRange
+            };
+
+            recording.PipelineBarrier(
+            PipelineStageFlags.TransferBit,
+            PipelineStageFlags.BottomOfPipeBit,
+            DependencyFlags.None,
+            imageMemoryBarriers: [barrier2]);
         }
     }
+
 
     void OnResize(Vector2D<int> x)
     {
@@ -232,9 +229,9 @@ public partial class GameWindow
     {
         var (xmin, xmax) = config.Visualization.RangeX;
         var (ymin, ymax) = config.Visualization.RangeY;
-        var (q, p) = integrator.Step(new Vector<double>([(pos[0] + 1.0)/2.0*(xmax-xmin)+xmin, totalTime]), new Vector<double>([(pos[1]+1)/2.0 * (ymax-ymin) + ymin, 0]), frametime);
-        return new Vector2D<float>((float)((q[0]-xmin)/(xmax-xmin)*2) - 1f, 
-                    (float)((p[0]-ymin)/(ymax-ymin)*2) - 1f);
+        var (q, p) = integrator.Step(new Vector<double>([(pos[0] + 1.0) / 2.0 * (xmax - xmin) + xmin, totalTime]), new Vector<double>([(pos[1] + 1) / 2.0 * (ymax - ymin) + ymin, 0]), frametime);
+        return new Vector2D<float>((float)((q[0] - xmin) / (xmax - xmin) * 2) - 1f,
+                    (float)((p[0] - ymin) / (ymax - ymin) * 2) - 1f);
     }
     uint imageIndex;
     Task[] taskList;
@@ -304,7 +301,7 @@ public partial class GameWindow
         {
             position = Vector2D<float>.Zero,
             offset = new Vector2D<float>(0, 1),
-            color = new Vector4D<float>(0, 0, 0, 1 - (float)Math.Exp(-frametime*config.Visualization.Fade))
+            color = new Vector4D<float>(0, 0, 0, 1 - (float)Math.Exp(-frametime * config.Visualization.Fade))
         };
 
 
