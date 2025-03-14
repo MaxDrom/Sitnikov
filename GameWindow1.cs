@@ -430,25 +430,7 @@ public partial class GameWindow : IDisposable
         };
 
         Rect2D scissor = new(new Offset2D(0, 0), swapchain.Extent);
-
-        PipelineRasterizationStateCreateInfo pipelineRasterizationState = new()
-        {
-            SType = StructureType.PipelineRasterizationStateCreateInfo,
-            DepthClampEnable = false,
-
-            RasterizerDiscardEnable = false,
-
-            PolygonMode = PolygonMode.Fill,
-            LineWidth = 1.0f,
-            CullMode = CullModeFlags.BackBit,
-            FrontFace = FrontFace.Clockwise,
-
-            DepthBiasEnable = false,
-            DepthBiasConstantFactor = 0.0f,
-            DepthBiasClamp = 0.0f,
-            DepthBiasSlopeFactor = 0.0f
-        };
-
+        
         PipelineColorBlendAttachmentState colorBlend = new()
         {
             ColorWriteMask = ColorComponentFlags.RBit
@@ -469,7 +451,10 @@ public partial class GameWindow : IDisposable
                 .WithDynamicStages([DynamicState.Viewport, DynamicState.Scissor])
                 .WithFixedFunctions(
                                     z => z.ColorBlending([colorBlend])
-                                          .Rasterization(pipelineRasterizationState)
+                                          .Rasterization(z=>z.WithSettings(PolygonMode.Fill, 
+                                                                            CullModeFlags.BackBit, 
+                                                                            FrontFace.Clockwise, 
+                                                                            1.0f))
                                           .Multisampling(SampleCountFlags.Count1Bit)
                                         )
                 .WithVertexInput(

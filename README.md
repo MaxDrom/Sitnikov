@@ -40,6 +40,10 @@ Visualization: ---# Visualization parameters (optional)
         Item1: -3
         Item2: 3
 
-Poincare: ---# Poincare map parameters (optional, if not specified, iff not specified, a phase portrait visualization will be run instead of map generation; if specified, the phase portrait visualization will not be run)
+Poincare: ---# Poincare map parameters (optional, if not specified, 
+                if not specified, a phase portrait visualization will 
+                be run instead of map generation; 
+                if specified, 
+                the phase portrait visualization will not be run)
     Periods: 100 ---# Number of iteration
 ```

@@ -1,5 +1,4 @@
 using System.Runtime.CompilerServices;
-using Silk.NET.GLFW;
 using Silk.NET.Vulkan;
 
 namespace BoidsVulkan;
@@ -136,10 +135,11 @@ public sealed class GraphicsPipelineBuider
     {
         GraphicsPipelineBuider _scope = scope;
 
-        public FixedFunctionBuilder Rasterization(PipelineRasterizationStateCreateInfo state)
+        public FixedFunctionBuilder Rasterization(Func<RasterizationBuilder, RasterizationBuilder> f)
         {
             _scope._isRasterization = true;
-            _scope._rasterizationSettings = state;
+            f(new RasterizationBuilder(_scope));
+            _scope._rasterizationSettings.SType = StructureType.PipelineRasterizationStateCreateInfo;
             return this;
         }
 
@@ -275,6 +275,41 @@ public sealed class GraphicsPipelineBuider
         {
             _scope._shaderInfos[ShaderStageFlags.TessellationControlBit] = tessControl;
             _scope._shaderInfos[ShaderStageFlags.TessellationEvaluationBit] = tessEval;
+            return this;
+        }
+    }
+
+    public class RasterizationBuilder(GraphicsPipelineBuider scope)
+    {
+        private GraphicsPipelineBuider _scope = scope;
+
+        public RasterizationBuilder WithRasterizerDiscard()
+        {
+            _scope._rasterizationSettings.RasterizerDiscardEnable = true;
+            return this;
+        }
+
+        public RasterizationBuilder WithDepthClampEnable()
+        {
+            _scope._rasterizationSettings.DepthClampEnable = true;
+            return this;
+        }
+
+        public RasterizationBuilder WithSettings(PolygonMode polygonMode, CullModeFlags cullMode, FrontFace frontFace, float lineWidth)
+        {
+            _scope._rasterizationSettings.PolygonMode = polygonMode;
+            _scope._rasterizationSettings.LineWidth = lineWidth;
+            _scope._rasterizationSettings.CullMode = cullMode;
+            _scope._rasterizationSettings.FrontFace = frontFace;
+            return this;
+        }
+
+        public RasterizationBuilder WithDepthBias(float constantFactor, float clamp, float slopeFactor)
+        {
+            _scope._rasterizationSettings.DepthBiasEnable = true;
+            _scope._rasterizationSettings.DepthBiasConstantFactor = constantFactor;
+            _scope._rasterizationSettings.DepthBiasClamp = clamp;
+            _scope._rasterizationSettings.DepthBiasSlopeFactor = slopeFactor;
             return this;
         }
     }

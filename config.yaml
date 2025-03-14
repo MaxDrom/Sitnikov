@@ -13,8 +13,8 @@ Integrator:
 Visualization:
   Fade: 3
   RangeX:
-    Item1: -3
-    Item2: 3
+    Item1: -5
+    Item2: 5
   RangeY:
     Item1: -3
     Item2: 3
