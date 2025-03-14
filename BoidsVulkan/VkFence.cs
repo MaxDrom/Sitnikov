@@ -5,7 +5,7 @@ namespace BoidsVulkan;
 public class VkFence : IDisposable
 {
     public Fence InternalFence => _fence;
-    public static VkFence NullHandle => new VkFence(new Fence(), true);
+    public static VkFence NullHandle => new(new Fence(), true);
     private readonly VkContext _ctx;
     private readonly VkDevice _device;
     private readonly Fence _fence;

@@ -6,6 +6,7 @@ using Silk.NET.Vulkan.Extensions.KHR;
 using Silk.NET.Windowing;
 using VkAllocatorSystem;
 using BoidsVulkan;
+using System.Runtime.CompilerServices;
 namespace SymplecticIntegrators;
 
 public partial class GameWindow : IDisposable
@@ -413,34 +414,12 @@ public partial class GameWindow : IDisposable
 
     }
 
-
-
-
-
-    unsafe VkGraphicsPipeline CreateGraphicsPipeline(VkContext ctx, VkDevice device,
+    VkGraphicsPipeline CreateGraphicsPipeline(VkContext ctx, VkDevice device,
                     VkRenderPass renderPass, WindowOptions windowOptions, VkSwapchain swapchain)
     {
 
         using var vertModule = new VkShaderModule(ctx, device, "BoidsVulkan/shader_objects/base.vert.spv");
         using var fragModule = new VkShaderModule(ctx, device, "BoidsVulkan/shader_objects/base.frag.spv");
-        var shaderStages = new Dictionary<ShaderStageFlags, VkShaderInfo>
-        {
-            [ShaderStageFlags.VertexBit] = new VkShaderInfo(vertModule, "main"),
-            [ShaderStageFlags.FragmentBit] = new VkShaderInfo(fragModule, "main")
-        };
-
-        using var pipelineLayout = new VkPiplineLayout(ctx, device, []);
-        var (attributes, binding) = vertices[0].CreateVertexInputDescription(0);
-        var (attributes2, binding2) = instances[0].CreateVertexInputDescription(1, VertexInputRate.Instance);
-        var allattribs = attributes.ToList();
-        allattribs.AddRange(attributes2);
-        using var pipelineVertexInput = new VkVertexInputStateCreateInfo([binding, binding2], allattribs);
-        var inputAssemblyState = new PipelineInputAssemblyStateCreateInfo()
-        {
-            SType = StructureType.PipelineInputAssemblyStateCreateInfo,
-            Topology = PrimitiveTopology.TriangleList,
-            PrimitiveRestartEnable = false
-        };
 
         var viewport = new Viewport()
         {
@@ -450,35 +429,32 @@ public partial class GameWindow : IDisposable
             Height = swapchain.Extent.Height
         };
 
+        Rect2D scissor = new(new Offset2D(0, 0), swapchain.Extent);
+
         PipelineRasterizationStateCreateInfo pipelineRasterizationState = new()
         {
             SType = StructureType.PipelineRasterizationStateCreateInfo,
             DepthClampEnable = false,
+
             RasterizerDiscardEnable = false,
+
             PolygonMode = PolygonMode.Fill,
             LineWidth = 1.0f,
             CullMode = CullModeFlags.BackBit,
             FrontFace = FrontFace.Clockwise,
+
             DepthBiasEnable = false,
             DepthBiasConstantFactor = 0.0f,
             DepthBiasClamp = 0.0f,
             DepthBiasSlopeFactor = 0.0f
         };
 
-        PipelineMultisampleStateCreateInfo multisampling = new()
-        {
-            SType = StructureType.PipelineMultisampleStateCreateInfo,
-            SampleShadingEnable = false,
-            RasterizationSamples = SampleCountFlags.Count1Bit,
-            MinSampleShading = 1.0f,
-            PSampleMask = null,
-            AlphaToCoverageEnable = false,
-            AlphaToOneEnable = false
-        };
-
         PipelineColorBlendAttachmentState colorBlend = new()
         {
-            ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit,
+            ColorWriteMask = ColorComponentFlags.RBit
+                           | ColorComponentFlags.GBit
+                           | ColorComponentFlags.BBit
+                           | ColorComponentFlags.ABit,
             BlendEnable = true,
             ColorBlendOp = BlendOp.Add,
             SrcAlphaBlendFactor = BlendFactor.One,
@@ -486,32 +462,28 @@ public partial class GameWindow : IDisposable
             AlphaBlendOp = BlendOp.Add,
             SrcColorBlendFactor = BlendFactor.SrcAlpha,
             DstColorBlendFactor = BlendFactor.OneMinusSrcAlpha
-
         };
 
-        PipelineColorBlendStateCreateInfo colorBlendInfo = new()
-        {
-            SType = StructureType.PipelineColorBlendStateCreateInfo,
-            LogicOpEnable = false,
-            AttachmentCount = 1,
-            PAttachments = &colorBlend
-        };
-
-        Rect2D scissor = new(new Offset2D(0, 0), swapchain.Extent);
-        return new VkGraphicsPipeline(ctx, device,
-            shaderStages,
-            pipelineLayout,
-            renderPass,
-            0,
-            [DynamicState.Viewport, DynamicState.Scissor],
-            pipelineVertexInput,
-            viewport,
-            scissor,
-            inputAssemblyState,
-            &pipelineRasterizationState,
-            &multisampling,
-            &colorBlendInfo
-            );
+        return new GraphicsPipelineBuider()
+                .ForRenderPass(renderPass)
+                .WithDynamicStages([DynamicState.Viewport, DynamicState.Scissor])
+                .WithFixedFunctions(
+                                    z => z.ColorBlending([colorBlend])
+                                          .Rasterization(pipelineRasterizationState)
+                                          .Multisampling(SampleCountFlags.Count1Bit)
+                                        )
+                .WithVertexInput(
+                                    z => z.AddBindingFor<Vertex>(0, VertexInputRate.Vertex)
+                                          .AddBindingFor<Instance>(1, VertexInputRate.Instance)
+                                        )
+                .WithInputAssembly(PrimitiveTopology.TriangleList)
+                .WithViewportAndScissor(viewport, scissor)
+                .WithPipelineStages(
+                                    z => z.Vertex(new VkShaderInfo(vertModule, "main"))
+                                          .Fragment(new VkShaderInfo(fragModule, "main"))
+                                        )
+                .WithLayout([])
+                .Build(ctx, device, 0);
     }
 
 
