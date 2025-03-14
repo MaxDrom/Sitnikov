@@ -471,8 +471,6 @@ public partial class GameWindow : IDisposable
                 .Build(ctx, device, 0);
     }
 
-
-
     public void Dispose()
     {
         Dispose(disposing: true);
