@@ -10,7 +10,7 @@ namespace SymplecticIntegrators;
 
 public class ParticleSystem : IDisposable
 {
-    private int _N = 2048;
+    private int _N = 1024;
     private VkContext _ctx;
     private VkDevice _device;
 
@@ -168,9 +168,7 @@ public class ParticleSystem : IDisposable
         using (var mapped = _staggingBuffer.Map<float>(0, _N * _N))
         {
             for (var i = 0; i < _N * _N; i++)
-            {
-                data[i] = new(mapped[i], 0, 0);
-            }
+                data[i] = new((float)(mapped[i]/(2*Math.PI)), 0, 0);
         }
 
         using var image = SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(data, _N, _N);
