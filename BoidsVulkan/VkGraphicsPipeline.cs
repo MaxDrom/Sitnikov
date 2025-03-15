@@ -19,7 +19,8 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
 
     public unsafe VkGraphicsPipeline(VkContext ctx, VkDevice device,
         Dictionary<ShaderStageFlags, VkShaderInfo> stageInfos,
-        IEnumerable<VkSetLayout> setLayouts,
+        VkSetLayout[] setLayouts,
+        PushConstantRange[] pushConstantRanges,
         VkRenderPass renderPass,
         int subpassIndex,
         IEnumerable<DynamicState> dynamicStates,
@@ -35,7 +36,7 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
     {
         _ctx = ctx;
         _device = device;
-        _pipelineLayout = new VkPiplineLayout(ctx, device, setLayouts);
+        _pipelineLayout = new VkPiplineLayout(ctx, device, setLayouts, pushConstantRanges);
         unsafe
         {
             var tmp = new List<PipelineShaderStageCreateInfo>();

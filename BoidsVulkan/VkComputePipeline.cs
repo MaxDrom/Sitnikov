@@ -11,11 +11,11 @@ public class VkComputePipeline: IVkPipeline, IDisposable
     private VkPiplineLayout _pipelineLayout;
     private bool disposedValue;
 
-    public unsafe VkComputePipeline(VkContext ctx, VkDevice device, VkShaderInfo computeShader, IEnumerable<VkSetLayout> setLayouts)
+    public unsafe VkComputePipeline(VkContext ctx, VkDevice device, VkShaderInfo computeShader, VkSetLayout[] setLayouts, PushConstantRange[] pushConstantRanges)
     {
         _ctx = ctx;
         _device = device;
-         _pipelineLayout = new VkPiplineLayout(ctx, device, setLayouts);
+         _pipelineLayout = new VkPiplineLayout(ctx, device, setLayouts, pushConstantRanges);
         var pname = SilkMarshal.StringToPtr(computeShader.EntryPoint);
         var stageInfo = new PipelineShaderStageCreateInfo()
         {

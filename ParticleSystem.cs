@@ -10,7 +10,7 @@ namespace SymplecticIntegrators;
 
 public class ParticleSystem : IDisposable
 {
-    private int _N = 1024;
+    private int _N = 2048;
     private VkContext _ctx;
     private VkDevice _device;
 
@@ -35,7 +35,7 @@ public class ParticleSystem : IDisposable
         _allocator = allocator;
         _staggingAllocator = staggingAllocator;
 
-        _staggingBuffer = new VkBuffer(sizeof(float) * 1024 * 1024,
+        _staggingBuffer = new VkBuffer(sizeof(float) * (ulong)(_N * _N),
                                 BufferUsageFlags.TransferDstBit, SharingMode.Exclusive, _staggingAllocator);
         var subresourceRange = new ImageSubresourceRange()
         {
@@ -55,14 +55,14 @@ public class ParticleSystem : IDisposable
             StageFlags = ShaderStageFlags.ComputeBit
         };
         using var layout = new VkSetLayout(_ctx, _device, [binding]);
-
+        PushConstantRange pushConstant = new PushConstantRange(ShaderStageFlags.ComputeBit, 0, sizeof(int));
         _computePipeline = new VkComputePipeline(ctx, device, new VkShaderInfo(shaderModule, "main"),
-                            [layout]);
+                            [layout], [pushConstant]);
         var buffers = commandPool.AllocateBuffers(CommandBufferLevel.Primary, 2);
         _cmdBuffer = buffers[0];
         _cmdBufferCopy = buffers[1];
 
-        _eccentricityTexture = new(ImageType.Type2D, new(1024, 1024, 1), 1, 1, Format.R32Sfloat,
+        _eccentricityTexture = new(ImageType.Type2D, new((uint)_N, (uint)_N, 1), 1, 1, Format.R32Sfloat,
                                     ImageTiling.Optimal, ImageLayout.Undefined, ImageUsageFlags.StorageBit | ImageUsageFlags.TransferSrcBit, SampleCountFlags.Count1Bit, SharingMode.Exclusive, _allocator);
         _eccentricityView = new(ctx, device, _eccentricityTexture.Image, default,
                                 subresourceRange);
@@ -102,7 +102,12 @@ public class ParticleSystem : IDisposable
                                     imageMemoryBarriers: [barrier]);
 
             recording.BindDescriptorSets(PipelineBindPoint.Compute, _computePipeline.PipelineLayout, [_descriptorSet]);
-            _ctx.Api.CmdDispatch(_cmdBuffer.InternalBuffer, 1024 / 32, 1024 / 32, 1);
+            _ctx.Api.CmdPushConstants(_cmdBuffer.InternalBuffer, 
+                                            _computePipeline.PipelineLayout, ShaderStageFlags.ComputeBit,
+                                            0,
+                                            sizeof(int),
+                                            ref _N);
+            _ctx.Api.CmdDispatch(_cmdBuffer.InternalBuffer, (uint)_N / 32, (uint)_N / 32, 1);
 
             ImageMemoryBarrier barrier2 = new()
             {
@@ -136,7 +141,7 @@ public class ParticleSystem : IDisposable
                     LayerCount = 1
                 },
                 ImageOffset = new Offset3D(0, 0, 0),
-                ImageExtent = new Extent3D((uint)1024, (uint)1024, 1)
+                ImageExtent = new Extent3D((uint)_N, (uint)_N, 1)
             };
 
             _ctx.Api.CmdCopyImageToBuffer(
@@ -158,17 +163,17 @@ public class ParticleSystem : IDisposable
         _cmdBufferCopy.Submit(_device.TransferQueue, VkFence.NullHandle, [], []);
         _ctx.Api.QueueWaitIdle(_device.TransferQueue);
 
-        Rgba32[] data = new Rgba32[1024 * 1024];
+        Rgba32[] data = new Rgba32[_N * _N];
 
-        using (var mapped = _staggingBuffer.Map<float>(0, 1024 * 1024))
+        using (var mapped = _staggingBuffer.Map<float>(0, _N * _N))
         {
-            for (var i = 0; i < 1024 * 1024; i++)
+            for (var i = 0; i < _N * _N; i++)
             {
                 data[i] = new(mapped[i], 0, 0);
             }
         }
 
-        using var image = SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(data, 1024, 1024);
+        using var image = SixLabors.ImageSharp.Image.LoadPixelData<Rgba32>(data, _N, _N);
         image.SaveAsPng("ecc.png");
     }
 

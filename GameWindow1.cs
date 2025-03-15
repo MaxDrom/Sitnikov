@@ -446,7 +446,7 @@ public partial class GameWindow : IDisposable
             DstColorBlendFactor = BlendFactor.OneMinusSrcAlpha
         };
 
-        return new GraphicsPipelineBuider()
+        return new GraphicsPipelineBuilder()
                 .ForRenderPass(renderPass)
                 .WithDynamicStages([DynamicState.Viewport, DynamicState.Scissor])
                 .WithFixedFunctions(
@@ -467,7 +467,7 @@ public partial class GameWindow : IDisposable
                                     z => z.Vertex(new VkShaderInfo(vertModule, "main"))
                                           .Fragment(new VkShaderInfo(fragModule, "main"))
                                         )
-                .WithLayout([])
+                .WithLayouts([])
                 .Build(ctx, device, 0);
     }
 

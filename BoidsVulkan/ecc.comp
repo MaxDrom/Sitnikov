@@ -1,10 +1,13 @@
 #version 450
 layout(local_size_x=32, local_size_y=32, local_size_z = 1) in;
-layout (binding = 0, r32f) uniform writeonly image2D inputImage;
+layout(binding = 0, r32f) uniform writeonly image2D inputImage;
+layout(push_constant) uniform PushConstants {
+    int N;
+}push;
 #define M_PI 3.1415926535897932384626433832795
 void main() {
     uvec2 id = gl_GlobalInvocationID.xy;
-    vec2 uv = id/float(1023);
+    vec2 uv = id/float(push.N-1);
     float e = uv.x;
     float M = uv.y*2*M_PI;
     float E = M;

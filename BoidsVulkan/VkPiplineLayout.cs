@@ -9,29 +9,34 @@ public class VkPiplineLayout : IDisposable
     private readonly PipelineLayout _pipelineLayout;
     private bool disposedValue;
 
-    public VkPiplineLayout(VkContext ctx, VkDevice device, IEnumerable<VkSetLayout> setLayouts)
+    public VkPiplineLayout(VkContext ctx, VkDevice device, VkSetLayout[] setLayouts, PushConstantRange[] pushConstantRanges)
     {
-        var setLayoutsArray = setLayouts.Select(z => z.SetLayout).ToArray();
+        var setLayoutsArray = setLayouts;
         _ctx = ctx;
         _device = device;
         unsafe
         {
+            DescriptorSetLayout* psetLayouts = stackalloc DescriptorSetLayout[setLayouts.Length];
+            for (var i = 0; i < setLayouts.Length; i++)
+                psetLayouts[i] = setLayouts[i].SetLayout;
+
+            PushConstantRange* pPushConstantRanges = stackalloc PushConstantRange[pushConstantRanges.Length];
+            for(var i = 0; i<pushConstantRanges.Length; i++)
+                pPushConstantRanges[i] = pushConstantRanges[i];
+            
             PipelineLayoutCreateInfo createInfo = new()
             {
                 SType = StructureType.PipelineLayoutCreateInfo,
-                PushConstantRangeCount = 0,
-                PPushConstantRanges = null,
-                SetLayoutCount = (uint)setLayoutsArray.Length
+                PushConstantRangeCount = (uint)pushConstantRanges.Length,
+                PPushConstantRanges = pPushConstantRanges,
+                SetLayoutCount = (uint)setLayoutsArray.Length,
+                PSetLayouts = psetLayouts
             };
 
-            fixed (DescriptorSetLayout* pSetLayouts = setLayoutsArray)
-            {
-                createInfo.PSetLayouts = pSetLayouts;
+            if (_ctx.Api.CreatePipelineLayout(_device.Device, ref createInfo,
+                null, out _pipelineLayout) != Result.Success)
+                throw new Exception("Failed to create pipeline layout");
 
-                if (_ctx.Api.CreatePipelineLayout(_device.Device, ref createInfo,
-                    null, out _pipelineLayout) != Result.Success)
-                    throw new Exception("Failed to create pipeline layout");
-            }
         }
     }
 
