@@ -26,7 +26,7 @@ public unsafe class VkDevice : IDisposable
 
     public Queue GraphicsQueue => _graphicsQueue;
     public Queue PresentQueue => _presentQueue;
-
+    public Queue ComputeQueue => _computeQueue;
     public Queue TransferQueue => _transferQueue;
     private bool disposedValue;
 

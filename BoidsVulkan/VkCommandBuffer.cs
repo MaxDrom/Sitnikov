@@ -170,6 +170,16 @@ public class VkCommandBuffer
         {
             _ctx.Api.CmdBindIndexBuffer(_buffer.InternalBuffer, buffer.Buffer, offset, indexType);
         }
+
+        public void BindDescriptorSets(PipelineBindPoint bindPoint, PipelineLayout piplineLayout, DescriptorSet[] sets, uint[] dynamicOffsets = null, uint firstSet = 0)
+        {
+            _ctx.Api.CmdBindDescriptorSets(_buffer.InternalBuffer, bindPoint,
+                piplineLayout, 
+                0,
+                new ReadOnlySpan<DescriptorSet>(sets),
+                new ReadOnlySpan<uint>(dynamicOffsets)
+                );
+        }
         public void Dispose()
         {
             _ctx.Api.EndCommandBuffer(_buffer.InternalBuffer);

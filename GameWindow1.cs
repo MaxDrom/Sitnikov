@@ -235,7 +235,8 @@ public partial class GameWindow : IDisposable
             RecordBuffer(buffers[i], i);
         }
 
-
+        using var ps = new ParticleSystem(ctx, device, commandPool, allocator, staggingAllocator);
+        ps.Compute();
         fences = new VkFence[framesInFlight];
         imageAvailableSemaphores = new VkSemaphore[framesInFlight];
         renderFinishedSemaphores = new VkSemaphore[framesInFlight];

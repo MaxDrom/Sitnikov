@@ -1,7 +1,7 @@
 VPATH:= . BoidsVulkan/shader_objects BoidsVulkan builds
 all: run
 
-run: base.vert.spv base.frag.spv
+run: base.vert.spv base.frag.spv ecc.comp.spv
 	dotnet run
 
 %.spv: %

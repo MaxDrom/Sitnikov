@@ -70,7 +70,7 @@ public class VkDescriptorSetUpdater
             currentDescr++;
         }
 
-        DescriptorImageInfo* pImageInfos = stackalloc DescriptorImageInfo[_buffersWrites.Sum(z=>z.Item2.Length)];
+        DescriptorImageInfo* pImageInfos = stackalloc DescriptorImageInfo[_imageWrites.Sum(z=>z.Item2.Length)];
         for(var i = 0; i<_imageWrites.Count; i++)
         {
             var (writeDescriptor, infos) = _imageWrites[i];

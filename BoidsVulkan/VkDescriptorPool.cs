@@ -23,6 +23,8 @@ public class VkDescriptorPool : IDisposable
                 PPoolSizes = ppoolSizes,
                 MaxSets = maxSets
             };
+            if (_ctx.Api.CreateDescriptorPool(_device.Device, ref createInfo, null, out _descriptorPool) != Result.Success)
+                throw new Exception("Failed to create descriptor pool");
         }
     }
 
@@ -39,7 +41,8 @@ public class VkDescriptorPool : IDisposable
             {
                 SType = StructureType.DescriptorSetAllocateInfo,
                 DescriptorSetCount = (uint)n,
-                PSetLayouts = psetLayouts
+                PSetLayouts = psetLayouts,
+                DescriptorPool = _descriptorPool
             };
             _ctx.Api.AllocateDescriptorSets(_device.Device, ref allocateInfo, presult);
         }
@@ -59,7 +62,8 @@ public class VkDescriptorPool : IDisposable
             {
                 SType = StructureType.DescriptorSetAllocateInfo,
                 DescriptorSetCount = (uint)setLayouts.Length,
-                PSetLayouts = psetLayouts
+                PSetLayouts = psetLayouts,
+                DescriptorPool = _descriptorPool
             };
             _ctx.Api.AllocateDescriptorSets(_device.Device, ref allocateInfo, presult);
         }
