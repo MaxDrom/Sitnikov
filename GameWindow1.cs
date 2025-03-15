@@ -6,7 +6,6 @@ using Silk.NET.Vulkan.Extensions.KHR;
 using Silk.NET.Windowing;
 using VkAllocatorSystem;
 using BoidsVulkan;
-using System.Runtime.CompilerServices;
 namespace SymplecticIntegrators;
 
 public partial class GameWindow : IDisposable

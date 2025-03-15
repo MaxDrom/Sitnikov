@@ -69,7 +69,7 @@ public sealed class GraphicsPipelineBuider
         GraphicsPipelineBuider _scope = scope;
 
         public AttributeAggregator AddBindingFor<T>(int binding, VertexInputRate inputRate)
-            where T : unmanaged, IVertexData
+            where T : unmanaged, IVertexData<T>
         {
             var (attributeDescr, bindingDescr) = default(T).CreateVertexInputDescription(binding, inputRate);
             _scope._vertexInputBindingDescriptions.Add(bindingDescr);
@@ -191,7 +191,7 @@ public sealed class GraphicsPipelineBuider
                                         int subpassIndex)
         {
             using var vertexInputStateCreateInfo = new VkVertexInputStateCreateInfo(_scope._vertexInputBindingDescriptions, _scope._vertexInputAttributeDescriptions);
-            using var pipelineLayout = new VkPiplineLayout(ctx, device, _scope._setLayouts);
+            
 
             uint sampleMask = 0;
             if (_scope._sampleMask != null)
@@ -224,7 +224,7 @@ public sealed class GraphicsPipelineBuider
                         ctx,
                         device,
                         _scope._shaderInfos,
-                        pipelineLayout,
+                        _scope._setLayouts,
                         _scope._renderPass,
                         subpassIndex,
                         _scope._dynamicStates,

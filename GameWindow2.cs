@@ -7,7 +7,7 @@ using System.Numerics;
 namespace SymplecticIntegrators;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-struct Instance : IVertexData
+struct Instance : IVertexData<Instance>
 {
     [VertexAttributeDescription(2, Format.R32G32Sfloat)]
     public Vector2D<float> position;

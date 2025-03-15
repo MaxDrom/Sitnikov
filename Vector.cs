@@ -48,10 +48,12 @@ public class Vector<TField> : ILinearSpace<Vector<TField>, TField>, IEnumerable<
         var result = new Vector<TField>(left.Length);
         for (var i = 0; i < left.Length; i++)
             result[i] = left[i] + right[i];
+
+       
         return result;
     }
 
-    public static Vector<TField> operator *(Vector<TField> left, TField right)
+    public static Vector<TField> operator *(TField right, Vector<TField> left)
     {
         if (left._isZero)
             return new Vector<TField>(true);
@@ -59,11 +61,6 @@ public class Vector<TField> : ILinearSpace<Vector<TField>, TField>, IEnumerable<
         for (var i = 0; i < left.Length; i++)
             result[i] = left[i] * right;
         return result;
-    }
-
-    public static Vector<TField> operator *(TField right, Vector<TField> left)
-    {
-        return left * right;
     }
 
     public static TField operator *(Vector<TField> right, Vector<TField> left)
@@ -81,19 +78,6 @@ public class Vector<TField> : ILinearSpace<Vector<TField>, TField>, IEnumerable<
         return result;
     }
 
-    public static Vector<TField> operator -(Vector<TField> value)
-    {
-        var result = new Vector<TField>(value.Length);
-        for(var i = 0; i<value.Length; i++)
-            result[i] = -value[i];
-
-        return result;
-    }
-
-    public static Vector<TField> operator -(Vector<TField> left, Vector<TField> right)
-    {
-        return left +(-right);
-    }
 
     public override string ToString()
     {
