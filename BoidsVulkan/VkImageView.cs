@@ -4,16 +4,20 @@ namespace BoidsVulkan;
 
 public class VkImageView : IDisposable
 {
-    public ImageView ImageView => _imageView;
-    private readonly ImageView _imageView;
-    private readonly VkDevice _device;
     private readonly VkContext _ctx;
-    private bool disposedValue;
+    private readonly VkDevice _device;
+    private readonly ImageView _imageView;
+    private bool _disposedValue;
 
-    public VkImageView(VkContext ctx, VkDevice device, VkImage image, ComponentMapping mapping, ImageSubresourceRange subresourceRange, ImageViewType? viewType = null)
+    public VkImageView(VkContext ctx,
+        VkDevice device,
+        VkImage image,
+        ComponentMapping mapping,
+        ImageSubresourceRange subresourceRange,
+        ImageViewType? viewType = null)
     {
         viewType ??= (ImageViewType)image.Type;
-        var imageCreateInfo = new ImageViewCreateInfo()
+        var imageCreateInfo = new ImageViewCreateInfo
         {
             SType = StructureType.ImageViewCreateInfo,
             Image = image.Image,
@@ -26,31 +30,37 @@ public class VkImageView : IDisposable
         _device = device;
         unsafe
         {
-            if (ctx.Api.CreateImageView(device.Device, ref imageCreateInfo, null, out _imageView) != Result.Success)
+            if (ctx.Api.CreateImageView(device.Device,
+                    ref imageCreateInfo, null, out _imageView) !=
+                Result.Success)
                 throw new Exception("Failed to create image view");
         }
     }
 
+    public ImageView ImageView => _imageView;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!_disposedValue)
         {
             unsafe
             {
-                _ctx.Api.DestroyImageView(_device.Device, _imageView, null);
+                _ctx.Api.DestroyImageView(_device.Device, _imageView,
+                    null);
             }
-            disposedValue = true;
+
+            _disposedValue = true;
         }
     }
 
     ~VkImageView()
     {
-        Dispose(disposing: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        Dispose(false);
     }
 }

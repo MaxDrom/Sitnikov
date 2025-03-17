@@ -5,49 +5,66 @@ namespace VkAllocatorSystem;
 
 public class StupidAllocatorFactory : IVkAllocatorFactory
 {
-    public IVkAllocator Create(VkContext ctx, VkDevice device, MemoryPropertyFlags requiredProperties, MemoryHeapFlags preferredFlags)
+    public VkAllocator Create(VkContext ctx,
+        VkDevice device,
+        MemoryPropertyFlags requiredProperties,
+        MemoryHeapFlags preferredFlags)
     {
-        return new StupidAllocator(ctx, device, requiredProperties, preferredFlags);
+        return new StupidAllocator(ctx, device, requiredProperties,
+            preferredFlags);
     }
 }
 
-public class StupidAllocator : IVkAllocator
+public class StupidAllocator : VkAllocator
 {
-    private HashSet<AllocationNode> _allocatedNodes = [];
-    private PhysicalDeviceMemoryProperties _memoryProperties;
-    private List<int> _memoryTypesIndices;
-    private RWLock _rwlock = new();
+    private readonly HashSet<AllocationNode> _allocatedNodes = [];
 
-    public StupidAllocator(VkContext ctx, VkDevice device, MemoryPropertyFlags requiredProperties, MemoryHeapFlags preferredFlags)
-        : base(ctx, device, requiredProperties, preferredFlags)
+    private readonly PhysicalDeviceMemoryProperties _memoryProperties;
+
+    private readonly List<int> _memoryTypesIndices;
+    private readonly RwLock _rwlock = new();
+
+    public StupidAllocator(VkContext ctx,
+        VkDevice device,
+        MemoryPropertyFlags requiredProperties,
+        MemoryHeapFlags preferredFlags) : base(ctx, device,
+        requiredProperties, preferredFlags)
     {
-        Ctx.Api.GetPhysicalDeviceMemoryProperties(Device.PhysicalDevice, out _memoryProperties);
+        Ctx.Api.GetPhysicalDeviceMemoryProperties(
+            Device.PhysicalDevice, out _memoryProperties);
         Dictionary<int, int> memoryTypesScores = [];
         for (var i = 0; i < _memoryProperties.MemoryTypeCount; i++)
         {
-            if ((_memoryProperties.MemoryTypes[i].PropertyFlags & requiredProperties)
-            != requiredProperties)
+            if ((_memoryProperties.MemoryTypes[i].PropertyFlags &
+                 requiredProperties) != requiredProperties)
                 continue;
 
-            var heapInd = (int)_memoryProperties.MemoryTypes[i].HeapIndex;
-            var score = NumberOfSetBits((int)(_memoryProperties.MemoryHeaps[heapInd].Flags & preferredFlags));
+            var heapInd = (int)_memoryProperties
+                .MemoryTypes[i].HeapIndex;
+            var score = NumberOfSetBits(
+                (int)(_memoryProperties.MemoryHeaps[heapInd].Flags &
+                      preferredFlags));
             memoryTypesScores[i] = score;
         }
 
-        _memoryTypesIndices = [.. memoryTypesScores.OrderByDescending(z => z.Value).Select(z => z.Key)];
+        _memoryTypesIndices =
+        [
+            .. memoryTypesScores.OrderByDescending(z => z.Value)
+                .Select(z => z.Key)
+        ];
     }
 
-    static int NumberOfSetBits(int i)
+    private static int NumberOfSetBits(int i)
     {
         i -= (i >> 1) & 0x55555555;
         i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
         return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
     }
 
-    public override unsafe AllocationNode Allocate(MemoryRequirements requirements)
+    public override unsafe AllocationNode Allocate(
+        MemoryRequirements requirements)
     {
         var success = false;
-
 
         DeviceMemory deviceMemory = default;
         foreach (var i in _memoryTypesIndices)
@@ -55,14 +72,16 @@ public class StupidAllocator : IVkAllocator
             if ((requirements.MemoryTypeBits & (1 << i)) == 0)
                 continue;
 
-            var allocateInfo = new MemoryAllocateInfo()
+            var allocateInfo = new MemoryAllocateInfo
             {
                 SType = StructureType.MemoryAllocateInfo,
                 AllocationSize = requirements.Size,
                 MemoryTypeIndex = (uint)i
             };
 
-            if (Ctx.Api.AllocateMemory(Device.Device, ref allocateInfo, null, out deviceMemory) == Result.Success)
+            if (Ctx.Api.AllocateMemory(Device.Device,
+                    ref allocateInfo, null, out deviceMemory) ==
+                Result.Success)
             {
                 success = true;
                 break;
@@ -77,6 +96,7 @@ public class StupidAllocator : IVkAllocator
         {
             _allocatedNodes.Add(result);
         }
+
         return result;
     }
 
@@ -84,7 +104,9 @@ public class StupidAllocator : IVkAllocator
     {
         using var writeLock = _rwlock.WriteLock();
         if (!_allocatedNodes.Contains(node))
-            throw new Exception("Trying deallocate not allocated memory!");
+            throw new Exception(
+                "Trying deallocate not allocated memory!");
+
         _allocatedNodes.Remove(node);
         Ctx.Api.FreeMemory(Device.Device, node.Memory, null);
     }
@@ -93,7 +115,6 @@ public class StupidAllocator : IVkAllocator
     {
         using var upgradeLock = _rwlock.UpgradeLock();
         var toDeallocate = _allocatedNodes.ToList();
-        foreach (var node in toDeallocate)
-            Deallocate(node);
+        foreach (var node in toDeallocate) Deallocate(node);
     }
 }

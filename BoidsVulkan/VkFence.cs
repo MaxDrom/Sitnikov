@@ -4,12 +4,10 @@ namespace BoidsVulkan;
 
 public class VkFence : IDisposable
 {
-    public Fence InternalFence => _fence;
-    public static VkFence NullHandle => new(new Fence(), true);
     private readonly VkContext _ctx;
     private readonly VkDevice _device;
     private readonly Fence _fence;
-    private bool disposedValue;
+    private bool _disposedValue;
 
     public VkFence(VkContext ctx, VkDevice device)
     {
@@ -23,7 +21,8 @@ public class VkFence : IDisposable
 
         unsafe
         {
-            if (_ctx.Api.CreateFence(_device.Device, ref createInfo, null, out _fence) != Result.Success)
+            if (_ctx.Api.CreateFence(_device.Device, ref createInfo,
+                    null, out _fence) != Result.Success)
                 throw new Exception("Failed to create fence");
         }
     }
@@ -31,39 +30,46 @@ public class VkFence : IDisposable
     private VkFence(Fence fence, bool disposed)
     {
         _fence = fence;
-        disposedValue = disposed;
+        _disposedValue = disposed;
+    }
+
+    public Fence InternalFence => _fence;
+
+    public static VkFence NullHandle => new(new Fence(), true);
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!_disposedValue)
         {
             unsafe
             {
                 _ctx.Api.DestroyFence(_device.Device, _fence, null);
             }
-            disposedValue = true;
+
+            _disposedValue = true;
         }
     }
+
     public void Reset()
     {
         _ctx.Api.ResetFences(_device.Device, 1, in _fence);
     }
-    
+
     public async Task WaitFor(ulong timeout = ulong.MaxValue)
     {
-        await Task.Run(()=>_ctx.Api.WaitForFences(_device.Device, 1, in _fence, true, timeout));
+        await Task.Run(() => _ctx.Api.WaitForFences(_device.Device, 1,
+            in _fence, true, timeout));
         //_ctx.Api.ResetFences(_device.Device, 1, in _fence);
     }
 
     ~VkFence()
     {
-        Dispose(disposing: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        Dispose(false);
     }
 }

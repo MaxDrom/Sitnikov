@@ -1,10 +1,10 @@
 e: 0.15
 SizeX: 1024
 SizeY: 1024
-RangeX: 
+RangeX:
   Item1: 0
   Item2: 3
-RangeY: 
+RangeY:
   Item1: 0
   Item2: 0.5
 Integrator:

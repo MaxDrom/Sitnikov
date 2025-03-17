@@ -13,8 +13,10 @@ public class SitnikovConfig
     public (double, double) RangeX { get; set; } = (0, 1);
     public (double, double) RangeY { get; set; } = (0, 1);
 
-    public IntegratorConfig Integrator { get; set; } = new IntegratorConfig();
-    public VisualizationConfig Visualization { get; set; } = new VisualizationConfig();
+    public IntegratorConfig Integrator { get; set; } = new();
+
+    public VisualizationConfig Visualization { get; set; } = new();
+
     public PoincareConfig Poincare { get; set; } = null;
 }
 
@@ -31,51 +33,58 @@ public class PoincareConfig
 
 public class VisualizationConfig
 {
-    public bool OnGPU {get; set;} = false;
+    public bool OnGPU { get; set; } = false;
     public double Fade { get; set; } = 5;
+
     public (double, double) RangeX { get; set; } = (-2.5, 2.5);
+
     public (double, double) RangeY { get; set; } = (-2.5, 2.5);
 }
-class Program
+
+internal class Program
 {
-    public static ConcurrentDictionary<double, double> KeplerSolutions = new();
+    public static ConcurrentDictionary<double, double>
+        KeplerSolutions = new();
 
-    public static double e = 0.1;
-    public static double dt = 0.01;
+    public static double E = 0.1;
+    public static double Dt = 0.01;
 
-    public static (double, double) SolveKeplerEq(double M)
+    private static SymplecticIntegrator<double, Vector<double>>
+        _yoshida6;
+
+    public static (double, double) SolveKeplerEq(double m)
     {
-        var E = M;
+        var e = m;
         double sin = 0;
 
         for (var i = 0; i < 10; i++)
         {
-            sin = Math.Sin(E);
-            var newE = M + e * sin;
-            E = newE;
-            E %= 2 * Math.PI;
-            if (E >= Math.PI)
-                E -= 2 * Math.PI;
+            sin = Math.Sin(e);
+            var newE = m + Program.E * sin;
+            e = newE;
+            e %= 2 * Math.PI;
+            if (e >= Math.PI) e -= 2 * Math.PI;
         }
-        return (E, sin);
+
+        return (e, sin);
     }
 
     public static double GetDistance(double t)
     {
-        var M = t;
-        M %= 2 * Math.PI;
-        if (M >= Math.PI)
-            M -= 2 * Math.PI;
-        if (KeplerSolutions.TryGetValue(M, out var result))
+        var m = t;
+        m %= 2 * Math.PI;
+        if (m >= Math.PI) m -= 2 * Math.PI;
+
+        if (KeplerSolutions.TryGetValue(m, out var result))
             return result;
 
-        var (E, sin) = SolveKeplerEq(M);
-        var res = 1 - e * Math.Sqrt(1 - sin * sin);
-        KeplerSolutions.TryAdd(M, res);
+        var (e, sin) = SolveKeplerEq(m);
+        var res = 1 - Program.E * Math.Sqrt(1 - sin * sin);
+        KeplerSolutions.TryAdd(m, res);
         return res;
     }
 
-    public static Vector<double> dV(Vector<double> q)
+    public static Vector<double> DV(Vector<double> q)
     {
         var result = new Vector<double>(2);
         var t = q[1];
@@ -87,30 +96,30 @@ class Program
         return result;
     }
 
-    public static Vector<double> dT(Vector<double> p)
+    public static Vector<double> DT(Vector<double> p)
     {
-        var result = new Vector<double>(2);
-
-        result[0] = p[0];
-        result[1] = 1;
+        var result = new Vector<double>(2) { [0] = p[0], [1] = 1 };
 
         return result;
     }
 
-    static SymplecticIntegrator<double, Vector<double>> yoshida6;
-
-    static async Task Main(string[] args)
+    private static async Task Main(string[] args)
     {
-        ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
+        ThreadPool.SetMaxThreads(Environment.ProcessorCount,
+            Environment.ProcessorCount);
         CultureInfo.CurrentCulture = new CultureInfo("en-US", false);
-        CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalDigits = 28;
+        CultureInfo.CurrentCulture.NumberFormat
+            .CurrencyDecimalDigits = 28;
         var deserializer = new DeserializerBuilder().Build();
 
         using var sr = File.OpenText("config.yaml");
         var config = deserializer.Deserialize<SitnikovConfig>(sr);
-        e = config.e;
-        dt = config.Integrator.Timestep;
-        yoshida6 = YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(dV, dT, config.Integrator.Order / 2);
+        E = config.e;
+        Dt = config.Integrator.Timestep;
+        _yoshida6 =
+            YoshidaIntegrator<double, Vector<double>>
+                .BuildFromLeapfrog(DV, DT,
+                    config.Integrator.Order / 2);
         if (config.Poincare != null)
         {
             var taskList = new List<Task<(double, double)[]>>();
@@ -120,45 +129,54 @@ class Program
             var dy = config.RangeY.Item2 - config.RangeY.Item1;
             for (var x = 0; x < gridX; x++)
             {
-                var q = config.RangeX.Item1 + dx * x / (double)(gridX - 1);
+                var q = config.RangeX.Item1 + dx * x / (gridX - 1);
                 for (var y = 0; y < gridY; y++)
                 {
-                    var p = config.RangeY.Item1 + dx * y / (double)(gridY - 1);
-                    taskList.Add(Task.Run(() => PoincareMap(q, p, config.Poincare.Periods)));
+                    var p = config.RangeY.Item1 +
+                            dx * y / (gridY - 1);
+                    taskList.Add(Task.Run(() =>
+                        PoincareMap(q, p, config.Poincare.Periods)));
                 }
             }
+
             var totalResults = await Task.WhenAll(taskList);
 
             using var file = new StreamWriter("result.dat");
             foreach (var res in totalResults)
-                foreach (var (q, p) in res)
-                    file.WriteLine($"{q} {p}");
+            foreach (var (q, p) in res)
+                file.WriteLine($"{q} {p}");
 
             return;
         }
 
         IParticleSystemFactory factory;
-        if(config.Visualization.OnGPU)
-            factory = new ParticleSystemGPUFactory(e, config.Integrator.Order/2);//new ParticleSystemCPUFactory(yoshida6);
+        if (config.Visualization.OnGPU)
+            factory =
+                new ParticleSystemGpuFactory(E,
+                    config.Integrator.Order /
+                    2);
         else
-            factory = new ParticleSystemCPUFactory(yoshida6);
-        using var gameWindow =
-            new GameWindow(WindowOptions.DefaultVulkan, config, 
-            factory);
-            
+            factory = new ParticleSystemCpuFactory(_yoshida6);
+
+        using var gameWindow = new GameWindow(
+            WindowOptions.DefaultVulkan, config, factory);
 
         gameWindow.Run();
     }
 
-    static (double, double)[] PoincareMap(double q0, double p0, int niters)
+    private static (double, double)[] PoincareMap(double q0,
+        double p0,
+        int niters)
     {
-        var result = new(double, double)[niters];
+        var result = new (double, double)[niters];
         result[0] = (q0, p0);
-        double qq = q0;
-        double pp = p0;
+        var qq = q0;
+        var pp = p0;
         for (var i = 0; i < niters; i++)
         {
-            foreach (var (t, q, p) in yoshida6.Integrate(Math.PI * 2, dt, new([qq, 0]), new([pp, 0])))
+            foreach (var (t, q, p) in _yoshida6.Integrate(Math.PI * 2,
+                         Dt, new Vector<double>([qq, 0]),
+                         new Vector<double>([pp, 0])))
             {
                 qq = q[0];
                 pp = p[0];

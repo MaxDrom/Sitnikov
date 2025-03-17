@@ -1,56 +1,75 @@
 namespace VkAllocatorSystem;
-class RWLock : IDisposable
+
+internal class RwLock : IDisposable
 {
+    private readonly ReaderWriterLockSlim _lock = new();
+
+    public void Dispose()
+    {
+        _lock.Dispose();
+    }
+
+    public ReadLockToken ReadLock()
+    {
+        return new ReadLockToken(_lock);
+    }
+
+    public WriteLockToken WriteLock()
+    {
+        return new WriteLockToken(_lock);
+    }
+
+    public UpgradeLockToken UpgradeLock()
+    {
+        return new UpgradeLockToken(_lock);
+    }
+
     public struct WriteLockToken : IDisposable
     {
-        private readonly ReaderWriterLockSlim @lock;
+        private readonly ReaderWriterLockSlim _lock;
+
         public WriteLockToken(ReaderWriterLockSlim @lock)
         {
-            this.@lock = @lock;
+            this._lock = @lock;
             @lock.EnterWriteLock();
         }
+
         public void Dispose()
         {
-            if (@lock.IsWriteLockHeld)
-                @lock.ExitWriteLock();
+            if (_lock.IsWriteLockHeld) _lock.ExitWriteLock();
         }
     }
 
     public struct ReadLockToken : IDisposable
     {
-        private readonly ReaderWriterLockSlim @lock;
+        private readonly ReaderWriterLockSlim _lock;
+
         public ReadLockToken(ReaderWriterLockSlim @lock)
         {
-            this.@lock = @lock;
+            this._lock = @lock;
             @lock.EnterReadLock();
         }
+
         public void Dispose()
         {
-            if (@lock.IsReadLockHeld)
-                @lock.ExitReadLock();
+            if (_lock.IsReadLockHeld) _lock.ExitReadLock();
         }
     }
 
     public struct UpgradeLockToken : IDisposable
     {
-        private readonly ReaderWriterLockSlim @lock;
+        private readonly ReaderWriterLockSlim _lock;
+
         public UpgradeLockToken(ReaderWriterLockSlim @lock)
         {
-            this.@lock = @lock;
+            this._lock = @lock;
             @lock.EnterUpgradeableReadLock();
         }
+
         public void Dispose()
         {
-            if (@lock.IsUpgradeableReadLockHeld)
-                @lock.ExitUpgradeableReadLock();
+            if (_lock.IsUpgradeableReadLockHeld)
+                _lock.ExitUpgradeableReadLock();
         }
     }
-
-    private readonly ReaderWriterLockSlim @lock = new ReaderWriterLockSlim();
-
-    public ReadLockToken ReadLock() => new ReadLockToken(@lock);
-    public WriteLockToken WriteLock() => new WriteLockToken(@lock);
-    public UpgradeLockToken UpgradeLock() => new UpgradeLockToken(@lock);
-
-    public void Dispose() => @lock.Dispose();
 }

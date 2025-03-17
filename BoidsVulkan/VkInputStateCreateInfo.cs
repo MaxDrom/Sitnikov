@@ -5,47 +5,69 @@ namespace BoidsVulkan;
 
 public class VkVertexInputStateCreateInfo : IDisposable
 {
-    public PipelineVertexInputStateCreateInfo PipelineVertexInputStateCreateInfo { get; private set; }
-    private GCHandle _vertexInputAttributeDescriptionsHandle;
     private GCHandle _bindingDescriptionsHandle;
-    private bool disposedValue;
 
-    public VkVertexInputStateCreateInfo(IEnumerable<VertexInputBindingDescription> bindingDescriptions,
-        IEnumerable<VertexInputAttributeDescription> vertexInputAttributeDescriptions)
+    private GCHandle _vertexInputAttributeDescriptionsHandle;
+
+    private bool _disposedValue;
+
+    public VkVertexInputStateCreateInfo(
+        IEnumerable<VertexInputBindingDescription>
+            bindingDescriptions,
+        IEnumerable<VertexInputAttributeDescription>
+            vertexInputAttributeDescriptions)
     {
-        _vertexInputAttributeDescriptionsHandle = GCHandle.Alloc(vertexInputAttributeDescriptions.ToArray(), GCHandleType.Pinned);
-        _bindingDescriptionsHandle = GCHandle.Alloc(bindingDescriptions.ToArray(), GCHandleType.Pinned);
+        _vertexInputAttributeDescriptionsHandle = GCHandle.Alloc(
+            vertexInputAttributeDescriptions.ToArray(),
+            GCHandleType.Pinned);
+        _bindingDescriptionsHandle = GCHandle.Alloc(
+            bindingDescriptions.ToArray(), GCHandleType.Pinned);
         unsafe
         {
-            PipelineVertexInputStateCreateInfo = new()
-            {
-                SType = StructureType.PipelineVertexInputStateCreateInfo,
-                VertexBindingDescriptionCount = (uint)bindingDescriptions.Count(),
-                PVertexBindingDescriptions = (VertexInputBindingDescription*)_bindingDescriptionsHandle.AddrOfPinnedObject(),
-                VertexAttributeDescriptionCount = (uint)vertexInputAttributeDescriptions.Count(),
-                PVertexAttributeDescriptions = (VertexInputAttributeDescription *)_vertexInputAttributeDescriptionsHandle.AddrOfPinnedObject(),
-            };
+            PipelineVertexInputStateCreateInfo =
+                new PipelineVertexInputStateCreateInfo
+                {
+                    SType =
+                        StructureType
+                            .PipelineVertexInputStateCreateInfo,
+                    VertexBindingDescriptionCount =
+                        (uint)bindingDescriptions.Count(),
+                    PVertexBindingDescriptions =
+                        (VertexInputBindingDescription*)
+                        _bindingDescriptionsHandle
+                            .AddrOfPinnedObject(),
+                    VertexAttributeDescriptionCount =
+                        (uint)vertexInputAttributeDescriptions
+                            .Count(),
+                    PVertexAttributeDescriptions =
+                        (VertexInputAttributeDescription*)
+                        _vertexInputAttributeDescriptionsHandle
+                            .AddrOfPinnedObject()
+                };
         }
+    }
+
+    public PipelineVertexInputStateCreateInfo
+        PipelineVertexInputStateCreateInfo { get; private set; }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!_disposedValue)
         {
             _bindingDescriptionsHandle.Free();
             _vertexInputAttributeDescriptionsHandle.Free();
-            disposedValue = true;
+            _disposedValue = true;
         }
     }
 
     ~VkVertexInputStateCreateInfo()
     {
-        Dispose(disposing: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        Dispose(false);
     }
 }

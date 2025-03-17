@@ -2,8 +2,9 @@ using System.Numerics;
 
 namespace SymplecticIntegrators;
 
-public interface ILinearSpace<TSelf, TField> : IAdditionOperators<TSelf, TSelf, TSelf>,
-                                               IAdditiveIdentity<TSelf, TSelf>
+public interface ILinearSpace<TSelf, TField> :
+    IAdditionOperators<TSelf, TSelf, TSelf>,
+    IAdditiveIdentity<TSelf, TSelf>
     where TField : INumber<TField>
     where TSelf : ILinearSpace<TSelf, TField>
 {
@@ -11,17 +12,16 @@ public interface ILinearSpace<TSelf, TField> : IAdditionOperators<TSelf, TSelf, 
 
     static virtual TSelf operator *(TSelf right, TField left)
     {
-        return left*right;
+        return left * right;
     }
 
     static virtual TSelf operator -(TSelf value)
     {
-        return (-TField.One)*value;
+        return -TField.One * value;
     }
 
     static virtual TSelf operator -(TSelf left, TSelf right)
     {
-        return left+(-right);
+        return left + -right;
     }
 }
-

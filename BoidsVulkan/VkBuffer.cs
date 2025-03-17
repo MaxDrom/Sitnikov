@@ -1,123 +1,141 @@
 using System.Runtime.InteropServices;
 using Silk.NET.Vulkan;
 using VkAllocatorSystem;
+using Buffer = Silk.NET.Vulkan.Buffer;
 
 namespace BoidsVulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
-public interface VkBuffer
+
+using Buffer = Buffer;
+
+public interface IVkBuffer
 {
-    Buffer Buffer {get;}
+    Buffer Buffer { get; }
 }
 
-public class VkBuffer<T> : VkBuffer, IDisposable
-    where T: unmanaged
+public class VkBuffer<T> : IVkBuffer, IDisposable
+    where T : unmanaged
 {
-    public Buffer Buffer =>_buffer;
-    private VkContext _ctx;
-    private VkDevice _device;
-    public ulong Size { get; private set; }
+    private readonly VkAllocator _allocator;
+    private readonly Buffer _buffer;
+    private readonly VkContext _ctx;
+    private readonly VkDevice _device;
+    private readonly AllocationNode _node;
+    private bool _disposedValue;
+
+    public VkBuffer(int length,
+        BufferUsageFlags usage,
+        SharingMode sharingMode,
+        VkAllocator allocator)
+    {
+        _ctx = allocator.Ctx;
+        _device = allocator.Device;
+        _allocator = allocator;
+        Size = (ulong)length * (ulong)Marshal.SizeOf<T>();
+        unsafe
+        {
+            var createInfo = new BufferCreateInfo
+            {
+                SType = StructureType.BufferCreateInfo,
+                Size = Size,
+                Usage = usage,
+                SharingMode = sharingMode
+            };
+
+            if (_ctx.Api.CreateBuffer(_device.Device, ref createInfo,
+                    null, out _buffer) != Result.Success)
+                throw new Exception("Failed to create buffer");
+
+            var memoryRequirements =
+                _ctx.Api.GetBufferMemoryRequirements(_device.Device,
+                    _buffer);
+            _node = allocator.Allocate(memoryRequirements);
+            _ctx.Api.BindBufferMemory(_device.Device, _buffer,
+                _node.Memory, _node.Offset);
+        }
+    }
+
+    public VkBuffer(ulong length,
+        BufferUsageFlags usage,
+        SharingMode sharingMode,
+        VkAllocator allocator)
+    {
+        _ctx = allocator.Ctx;
+        _device = allocator.Device;
+        _allocator = allocator;
+        Size = length * (ulong)Marshal.SizeOf<T>();
+        unsafe
+        {
+            var createInfo = new BufferCreateInfo
+            {
+                SType = StructureType.BufferCreateInfo,
+                Size = Size,
+                Usage = usage,
+                SharingMode = sharingMode
+            };
+
+            if (_ctx.Api.CreateBuffer(_device.Device, ref createInfo,
+                    null, out _buffer) != Result.Success)
+                throw new Exception("Failed to create buffer");
+
+            var memoryRequirements =
+                _ctx.Api.GetBufferMemoryRequirements(_device.Device,
+                    _buffer);
+            _node = allocator.Allocate(memoryRequirements);
+            _ctx.Api.BindBufferMemory(_device.Device, _buffer,
+                _node.Memory, _node.Offset);
+        }
+    }
+
+    public ulong Size { get; }
 
     public DeviceMemory Memory => _node.Memory;
-    private Buffer _buffer;
-    private bool disposedValue;
-    private AllocationNode _node;
-    private IVkAllocator _allocator;
 
-    public VkBuffer(int length, BufferUsageFlags usage, SharingMode sharingMode, IVkAllocator allocator)
+    public void Dispose()
     {
-        _ctx = allocator.Ctx;
-        _device = allocator.Device;
-        _allocator = allocator;
-        Size = (ulong)length*(ulong)Marshal.SizeOf<T>();
-        unsafe
-        {
-            BufferCreateInfo createInfo = new BufferCreateInfo()
-            {
-                SType = StructureType.BufferCreateInfo,
-                Size = Size,
-                Usage = usage,
-                SharingMode = sharingMode
-            };
-
-            if (_ctx.Api.CreateBuffer(_device.Device, ref createInfo, null, out _buffer) != Result.Success)
-                throw new Exception("Failed to create buffer");
-
-            var memoryRequirements = _ctx.Api.GetBufferMemoryRequirements(_device.Device, _buffer);
-            _node = allocator.Allocate(memoryRequirements);
-            _ctx.Api.BindBufferMemory(_device.Device, _buffer, _node.Memory, _node.Offset);
-        }
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 
-    public VkBuffer(ulong length, BufferUsageFlags usage, SharingMode sharingMode, IVkAllocator allocator)
-    {
-        _ctx = allocator.Ctx;
-        _device = allocator.Device;
-        _allocator = allocator;
-        Size = (ulong)length*(ulong)Marshal.SizeOf<T>();
-        unsafe
-        {
-            BufferCreateInfo createInfo = new BufferCreateInfo()
-            {
-                SType = StructureType.BufferCreateInfo,
-                Size = Size,
-                Usage = usage,
-                SharingMode = sharingMode
-            };
-
-            if (_ctx.Api.CreateBuffer(_device.Device, ref createInfo, null, out _buffer) != Result.Success)
-                throw new Exception("Failed to create buffer");
-
-            var memoryRequirements = _ctx.Api.GetBufferMemoryRequirements(_device.Device, _buffer);
-            _node = allocator.Allocate(memoryRequirements);
-            _ctx.Api.BindBufferMemory(_device.Device, _buffer, _node.Memory, _node.Offset);
-        }
-    }
-
+    public Buffer Buffer => _buffer;
 
     public VkMappedMemory<T> Map(int offset, int size)
     {
-        ulong structSize = (ulong)Marshal.SizeOf<T>();
-        if(structSize*(ulong)size + (ulong)offset*structSize > Size)
+        var structSize = (ulong)Marshal.SizeOf<T>();
+        if (structSize * (ulong)size + (ulong)offset * structSize >
+            Size)
             throw new ArgumentException();
-        return new VkMappedMemory<T>(_ctx, _device, _node.Memory, 
-                                    offset, size, MemoryMapFlags.None);
+
+        return new VkMappedMemory<T>(_ctx, _device, _node.Memory,
+            offset, size, MemoryMapFlags.None);
     }
 
     public VkMappedMemory<T> Map(ulong offset, ulong size)
     {
-        ulong structSize = (ulong)Marshal.SizeOf<T>();
-        if(structSize*size + offset*structSize > Size)
+        var structSize = (ulong)Marshal.SizeOf<T>();
+        if (structSize * size + offset * structSize > Size)
             throw new ArgumentException();
-        return new VkMappedMemory<T>(_ctx, _device, _node.Memory, 
-                                    offset, size, MemoryMapFlags.None);
+
+        return new VkMappedMemory<T>(_ctx, _device, _node.Memory,
+            offset, size, MemoryMapFlags.None);
     }
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!_disposedValue)
         {
             unsafe
             {
                 _ctx.Api.DestroyBuffer(_device.Device, _buffer, null);
             }
 
-            if (disposing)
-            {
-                _allocator.Deallocate(_node);
-            }
+            if (disposing) _allocator.Deallocate(_node);
 
-            disposedValue = true;
+            _disposedValue = true;
         }
     }
 
     ~VkBuffer()
     {
-        Dispose(disposing: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        Dispose(false);
     }
 }

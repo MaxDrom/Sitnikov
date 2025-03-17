@@ -3,18 +3,20 @@ using System.Numerics;
 
 namespace SymplecticIntegrators;
 
-public class Vector<TField> : ILinearSpace<Vector<TField>, TField>, IEnumerable<TField>
+public class Vector<TField> : ILinearSpace<Vector<TField>, TField>,
+    IEnumerable<TField>
     where TField : INumber<TField>
 
 {
-    private bool _isZero = false;
-    private TField[] _coords;
+    private readonly TField[] _coords;
+    private readonly bool _isZero;
 
     private Vector(bool isZero = false)
     {
         _coords = [];
         _isZero = isZero;
     }
+
     public Vector(int n)
     {
         _coords = new TField[n];
@@ -31,19 +33,30 @@ public class Vector<TField> : ILinearSpace<Vector<TField>, TField>, IEnumerable<
         set => _coords[index] = value;
     }
 
-    public static Vector<TField> AdditiveIdentity => new Vector<TField>(true);
-
     public int Length => _coords.Length;
 
-    public static Vector<TField> operator +(Vector<TField> left, Vector<TField> right)
+    public IEnumerator<TField> GetEnumerator()
     {
-        if (left._isZero)
-            return right;
-        if (right._isZero)
-            return left;
+        return ((IEnumerable<TField>)_coords).GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _coords.GetEnumerator();
+    }
+
+    public static Vector<TField> AdditiveIdentity => new(true);
+
+    public static Vector<TField> operator +(Vector<TField> left,
+        Vector<TField> right)
+    {
+        if (left._isZero) return right;
+
+        if (right._isZero) return left;
 #if DEBUG
         if (left.Length != right.Length)
-            throw new ArgumentException("Вектора должны иметь одинаковый размер");
+            throw new ArgumentException(
+                "Вектора должны иметь одинаковый размер");
 #endif
         var result = new Vector<TField>(left.Length);
         for (var i = 0; i < left.Length; i++)
@@ -52,24 +65,27 @@ public class Vector<TField> : ILinearSpace<Vector<TField>, TField>, IEnumerable<
         return result;
     }
 
-    public static Vector<TField> operator *(TField right, Vector<TField> left)
+    public static Vector<TField> operator *(TField right,
+        Vector<TField> left)
     {
-        if (left._isZero)
-            return new Vector<TField>(true);
+        if (left._isZero) return new Vector<TField>(true);
+
         var result = new Vector<TField>(left.Length);
         for (var i = 0; i < left.Length; i++)
             result[i] = left[i] * right;
+
         return result;
     }
 
-    public static TField operator *(Vector<TField> right, Vector<TField> left)
+    public static TField operator *(Vector<TField> right,
+        Vector<TField> left)
     {
         var result = TField.Zero;
-        if (left._isZero || right._isZero)
-            return TField.Zero;
+        if (left._isZero || right._isZero) return TField.Zero;
 #if DEBUG
         if (left.Length != right.Length)
-            throw new ArgumentException("Вектора должны иметь одинаковый размер");
+            throw new ArgumentException(
+                "Вектора должны иметь одинаковый размер");
 #endif
         for (var i = 0; i < left.Length; i++)
             result += right[i] * left[i];
@@ -80,15 +96,5 @@ public class Vector<TField> : ILinearSpace<Vector<TField>, TField>, IEnumerable<
     public override string ToString()
     {
         return string.Join(" ", _coords);
-    }
-
-    public IEnumerator<TField> GetEnumerator()
-    {
-        return ((IEnumerable<TField>)_coords).GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return _coords.GetEnumerator();
     }
 }

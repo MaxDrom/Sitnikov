@@ -5,64 +5,77 @@ namespace VkAllocatorSystem;
 
 public class AllocationNode(DeviceMemory deviceMemory, ulong offset)
 {
-    public DeviceMemory Memory {get; init;} = deviceMemory;
-    public ulong Offset {get; init;} = offset;
-    internal AllocationNode Next {get; set;}
+    public DeviceMemory Memory { get; init; } = deviceMemory;
+
+    public ulong Offset { get; init; } = offset;
+    internal AllocationNode Next { get; set; }
 }
 
 public interface IVkAllocatorFactory
 {
-    IVkAllocator Create(VkContext ctx, VkDevice device, MemoryPropertyFlags requiredProperties, MemoryHeapFlags preferredFlags);
+    VkAllocator Create(VkContext ctx,
+        VkDevice device,
+        MemoryPropertyFlags requiredProperties,
+        MemoryHeapFlags preferredFlags);
 }
 
-public abstract class IVkAllocator : IDisposable
+public abstract class VkAllocator : IDisposable
 {
-    private bool disposedValue;
+    private bool _disposedValue;
+    protected MemoryHeapFlags PreferredFlags;
 
-    protected MemoryPropertyFlags requiredProperties;
-    protected MemoryHeapFlags preferredFlags;
-    private VkContext _ctx;
-    private VkDevice _device;
+    protected MemoryPropertyFlags RequiredProperties;
 
-    public VkContext Ctx => _ctx;
-    public VkDevice Device => _device;
-    public abstract AllocationNode Allocate(MemoryRequirements requirements);
-    public abstract void Deallocate(AllocationNode node);
-    public abstract void Free();
-
-    public IVkAllocator(VkContext ctx, VkDevice device, MemoryPropertyFlags requiredProperties, MemoryHeapFlags preferredFlags)
+    public VkAllocator(VkContext ctx,
+        VkDevice device,
+        MemoryPropertyFlags requiredProperties,
+        MemoryHeapFlags preferredFlags)
     {
-        _ctx = ctx;
-        _device = device;
-        this.requiredProperties = requiredProperties;
-        this.preferredFlags = preferredFlags;
+        Ctx = ctx;
+        Device = device;
+        this.RequiredProperties = requiredProperties;
+        this.PreferredFlags = preferredFlags;
     }
 
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!disposedValue)
-        {
-            Free();
-            disposedValue = true;
-        }
-    }
+    public VkContext Ctx { get; }
 
-    ~IVkAllocator()
-    {
-        Dispose(disposing: false);
-    }
+    public VkDevice Device { get; }
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        Dispose(true);
         GC.SuppressFinalize(this);
+    }
+
+    public abstract AllocationNode Allocate(
+        MemoryRequirements requirements);
+
+    public abstract void Deallocate(AllocationNode node);
+    public abstract void Free();
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposedValue)
+        {
+            Free();
+            _disposedValue = true;
+        }
+    }
+
+    ~VkAllocator()
+    {
+        Dispose(false);
     }
 }
 
 public interface IVkSingleTypeAllocator
 {
-    VkContext Ctx {get;}
-    VkDevice Device {get;}
-    bool TryAllocate(ulong size, ulong alignment, out AllocationNode node);
+    VkContext Ctx { get; }
+    VkDevice Device { get; }
+
+    bool TryAllocate(ulong size,
+        ulong alignment,
+        out AllocationNode node);
+
     void Deallocate(AllocationNode node);
 }

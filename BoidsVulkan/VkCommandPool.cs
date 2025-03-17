@@ -4,19 +4,17 @@ namespace BoidsVulkan;
 
 public class VkCommandPool : IDisposable
 {
+    private readonly List<VkCommandBuffer> _allocatedBuffers = new();
 
-    private List<VkCommandBuffer> _allocatedBuffers = new List<VkCommandBuffer>();
-    public CommandPool CmdPool => _cmdPool;
+    private readonly CommandPool _cmdPool;
     private readonly VkContext _ctx;
     private readonly VkDevice _device;
-    private readonly CommandPool _cmdPool;
-    private bool disposedValue;
+    private bool _disposedValue;
 
     public VkCommandPool(VkContext ctx,
-                        VkDevice device,
-                        CommandPoolCreateFlags flags,
-                        uint queueFamilyIndex
-                        )
+        VkDevice device,
+        CommandPoolCreateFlags flags,
+        uint queueFamilyIndex)
     {
         _ctx = ctx;
         _device = device;
@@ -30,12 +28,23 @@ public class VkCommandPool : IDisposable
 
         unsafe
         {
-            if (_ctx.Api.CreateCommandPool(_device.Device, ref info, null, out _cmdPool) != Result.Success)
+            if (_ctx.Api.CreateCommandPool(_device.Device, ref info,
+                    null, out _cmdPool) != Result.Success)
                 throw new Exception("Failed to create command pool");
         }
     }
 
-    public unsafe VkCommandBuffer[] AllocateBuffers(CommandBufferLevel level, int n)
+    public CommandPool CmdPool => _cmdPool;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    public unsafe VkCommandBuffer[] AllocateBuffers(
+        CommandBufferLevel level,
+        int n)
     {
         var result = new VkCommandBuffer[n];
         var tmp = stackalloc CommandBuffer[n];
@@ -50,9 +59,10 @@ public class VkCommandPool : IDisposable
 
         _ctx.Api.AllocateCommandBuffers(_device.Device, &info, tmp);
 
-        for(var i = 0; i<n; i++)
+        for (var i = 0; i < n; i++)
         {
-            result[i] = new VkCommandBuffer(_ctx, _device, this ,tmp[i]);
+            result[i] = new VkCommandBuffer(_ctx, _device,
+                this, tmp[i]);
             _allocatedBuffers.Add(result[i]);
         }
 
@@ -61,28 +71,28 @@ public class VkCommandPool : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!_disposedValue)
         {
             unsafe
             {
-                fixed (CommandBuffer* pbuffers = _allocatedBuffers.Select(z => z.InternalBuffer).ToArray())
+                fixed (CommandBuffer* pbuffers = _allocatedBuffers
+                           .Select(z => z.Buffer).ToArray())
                 {
-                    _ctx.Api.FreeCommandBuffers(_device.Device, _cmdPool, (uint)_allocatedBuffers.Count, pbuffers);
+                    _ctx.Api.FreeCommandBuffers(_device.Device,
+                        _cmdPool, (uint)_allocatedBuffers.Count,
+                        pbuffers);
                 }
-                _ctx.Api.DestroyCommandPool(_device.Device, _cmdPool, null);
+
+                _ctx.Api.DestroyCommandPool(_device.Device, _cmdPool,
+                    null);
             }
-            disposedValue = true;
+
+            _disposedValue = true;
         }
     }
 
     ~VkCommandPool()
     {
-        Dispose(disposing: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        Dispose(false);
     }
 }

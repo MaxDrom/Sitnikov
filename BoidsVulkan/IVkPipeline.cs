@@ -4,7 +4,7 @@ namespace BoidsVulkan;
 
 public interface IVkPipeline
 {
-    Pipeline InternalPipeline{get;}
-    PipelineBindPoint BindPoint{get;}
-    PipelineLayout PipelineLayout{get;}
+    Pipeline InternalPipeline { get; }
+    PipelineBindPoint BindPoint { get; }
+    PipelineLayout PipelineLayout { get; }
 }

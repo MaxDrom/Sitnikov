@@ -1,16 +1,15 @@
 using Silk.NET.Vulkan;
+using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace BoidsVulkan;
 
 public class VkSemaphore : IDisposable
 {
-    public PipelineStageFlags Flag {get; set;}
-    internal Silk.NET.Vulkan.Semaphore Semaphore => _semaphore;
     private readonly VkContext _ctx;
     private readonly VkDevice _device;
-    private readonly Silk.NET.Vulkan.Semaphore _semaphore;
+    private readonly Semaphore _semaphore;
 
-    private bool disposedValue;
+    private bool _disposedValue;
 
     public VkSemaphore(VkContext ctx, VkDevice device)
     {
@@ -18,36 +17,44 @@ public class VkSemaphore : IDisposable
         _device = device;
         SemaphoreCreateInfo createInfo = new()
         {
-            SType = StructureType.SemaphoreCreateInfo,
+            SType = StructureType.SemaphoreCreateInfo
         };
 
         unsafe
         {
-            if (_ctx.Api.CreateSemaphore(_device.Device, ref createInfo, null, out _semaphore) != Result.Success)
+            if (_ctx.Api.CreateSemaphore(_device.Device,
+                    ref createInfo, null, out _semaphore) !=
+                Result.Success)
                 throw new Exception("Failed to create semaphore");
         }
     }
 
+    public PipelineStageFlags Flag { get; set; }
+
+    internal Semaphore Semaphore => _semaphore;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!_disposedValue)
         {
             unsafe
             {
-                _ctx.Api.DestroySemaphore(_device.Device, _semaphore, null);
+                _ctx.Api.DestroySemaphore(_device.Device, _semaphore,
+                    null);
             }
-            disposedValue = true;
+
+            _disposedValue = true;
         }
     }
 
     ~VkSemaphore()
     {
-        Dispose(disposing: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        Dispose(false);
     }
 }

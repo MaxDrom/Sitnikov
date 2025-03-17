@@ -4,11 +4,10 @@ namespace BoidsVulkan;
 
 public class VkRenderPass : IDisposable
 {
-    public RenderPass RenderPass => _renderPass;
     private readonly VkContext _ctx;
     private readonly VkDevice _device;
     private readonly RenderPass _renderPass;
-    private bool disposedValue;
+    private bool _disposedValue;
 
     public VkRenderPass(VkContext ctx,
         VkDevice device,
@@ -21,72 +20,93 @@ public class VkRenderPass : IDisposable
 
         unsafe
         {
-            var psubpassDescr = stackalloc SubpassDescription[subpassInfos.Length];
-            var clrAttachmentLength = subpassInfos.Select(z => z.ColorAttachmentReferences.Length).Sum();
-            var clrAttachmentBuffer = stackalloc AttachmentReference[clrAttachmentLength];
+            var psubpassDescr =
+                stackalloc SubpassDescription[subpassInfos.Length];
+            var clrAttachmentLength = subpassInfos
+                .Select(z => z.ColorAttachmentReferences.Length)
+                .Sum();
+            var clrAttachmentBuffer =
+                stackalloc AttachmentReference[clrAttachmentLength];
             var clrAttachmentBufferCopy = clrAttachmentBuffer;
             foreach (var subpassInfo in subpassInfos)
             {
-                for (var i = 0; i < subpassInfo.ColorAttachmentReferences.Length; i++)
-                    clrAttachmentBufferCopy[i] = subpassInfo.ColorAttachmentReferences[i];
+                for (var i = 0;
+                     i < subpassInfo.ColorAttachmentReferences.Length;
+                     i++)
+                    clrAttachmentBufferCopy[i] = subpassInfo
+                        .ColorAttachmentReferences[i];
 
-                clrAttachmentBufferCopy += subpassInfo.ColorAttachmentReferences.Length;
+                clrAttachmentBufferCopy += subpassInfo
+                    .ColorAttachmentReferences.Length;
             }
-
 
             for (var i = 0; i < subpassInfos.Length; i++)
             {
-                psubpassDescr[i] = new SubpassDescription()
+                psubpassDescr[i] = new SubpassDescription
                 {
                     PipelineBindPoint = subpassInfos[i].BindPoint,
-                    ColorAttachmentCount = (uint)subpassInfos[i].ColorAttachmentReferences.Length,
+                    ColorAttachmentCount =
+                        (uint)subpassInfos[i]
+                            .ColorAttachmentReferences.Length,
                     PColorAttachments = clrAttachmentBuffer
                 };
-                clrAttachmentBuffer += subpassInfos[i].ColorAttachmentReferences.Length;
+                clrAttachmentBuffer += subpassInfos[i]
+                    .ColorAttachmentReferences.Length;
             }
-            var RenderPassCreateInfo = new RenderPassCreateInfo()
+
+            var renderPassCreateInfo = new RenderPassCreateInfo
             {
                 SType = StructureType.RenderPassCreateInfo,
                 PSubpasses = psubpassDescr,
                 SubpassCount = (uint)subpassInfos.Length,
-                AttachmentCount = (uint)attachmentDescriptions.Count(),
+                AttachmentCount =
+                    (uint)attachmentDescriptions.Count()
             };
 
-            fixed (SubpassDependency* pdeps = subpassDependencies.ToArray())
+            fixed (SubpassDependency* pdeps =
+                       subpassDependencies.ToArray())
             {
-                fixed (AttachmentDescription* pattach = attachmentDescriptions.ToArray())
+                fixed (AttachmentDescription* pattach =
+                           attachmentDescriptions.ToArray())
                 {
-                    RenderPassCreateInfo.PAttachments = pattach;
-                    RenderPassCreateInfo.DependencyCount = (uint)subpassDependencies.Count();
-                    RenderPassCreateInfo.PDependencies = pdeps;
-                    if (_ctx.Api.CreateRenderPass(_device.Device, ref RenderPassCreateInfo,
-                                null, out _renderPass) != Result.Success)
-                        throw new Exception("Failed to create render pass");
+                    renderPassCreateInfo.PAttachments = pattach;
+                    renderPassCreateInfo.DependencyCount =
+                        (uint)subpassDependencies.Count();
+                    renderPassCreateInfo.PDependencies = pdeps;
+                    if (_ctx.Api.CreateRenderPass(_device.Device,
+                            ref renderPassCreateInfo, null,
+                            out _renderPass) != Result.Success)
+                        throw new Exception(
+                            "Failed to create render pass");
                 }
             }
         }
     }
 
+    public RenderPass RenderPass => _renderPass;
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
     protected virtual void Dispose(bool disposing)
     {
-        if (!disposedValue)
+        if (!_disposedValue)
         {
             unsafe
             {
-                _ctx.Api.DestroyRenderPass(_device.Device, _renderPass, null);
+                _ctx.Api.DestroyRenderPass(_device.Device,
+                    _renderPass, null);
             }
-            disposedValue = true;
+
+            _disposedValue = true;
         }
     }
 
     ~VkRenderPass()
     {
-        Dispose(disposing: false);
-    }
-
-    public void Dispose()
-    {
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        Dispose(false);
     }
 }

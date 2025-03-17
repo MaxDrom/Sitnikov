@@ -5,46 +5,74 @@ namespace BoidsVulkan;
 
 public sealed class GraphicsPipelineBuilder
 {
-    private PushConstantRange[] _pushConstantRanges = [];
-    private VkSetLayout[] _setLayouts = [];
-    private Dictionary<ShaderStageFlags, VkShaderInfo> _shaderInfos = new();
-    private bool _logicOpEnable;
+    private readonly Dictionary<ShaderStageFlags, VkShaderInfo>
+        _shaderInfos = new();
+
     private PipelineColorBlendAttachmentState[] _colorBlends;
-    private List<VertexInputBindingDescription> _vertexInputBindingDescriptions = null;
-    private List<VertexInputAttributeDescription> _vertexInputAttributeDescriptions = null;
+
     private List<DynamicState> _dynamicStates = [];
-    private VkRenderPass _renderPass;
-    private Viewport _viewport;
-    private Rect2D _scissor;
 
     private PipelineInputAssemblyStateCreateInfo _inputAssemblyState;
 
-    private bool _isRasterization = false;
-    private PipelineRasterizationStateCreateInfo _rasterizationSettings;
-    private uint? _sampleMask = null;
-    private bool _isMultisampling = false;
+    private bool _isDepthStencil;
+    private bool _isMultisampling;
+
+    private bool _isRasterization;
+    private bool _logicOpEnable;
+
     private PipelineMultisampleStateCreateInfo _multisamplingSettings;
 
-    private bool _isDepthStencil = false;
-    private PipelineDepthStencilStateCreateInfo _pipelineDepthStencilSettings;
+    private PipelineDepthStencilStateCreateInfo
+        _pipelineDepthStencilSettings;
 
+    private PushConstantRange[] _pushConstantRanges = [];
 
-    public class GraphicsPipelineBuilderOptional(GraphicsPipelineBuilder scope)
+    private PipelineRasterizationStateCreateInfo
+        _rasterizationSettings;
+
+    private VkRenderPass _renderPass;
+    private uint? _sampleMask;
+    private Rect2D _scissor;
+    private VkSetLayout[] _setLayouts = [];
+
+    private List<VertexInputAttributeDescription>
+        _vertexInputAttributeDescriptions;
+
+    private List<VertexInputBindingDescription>
+        _vertexInputBindingDescriptions;
+
+    private Viewport _viewport;
+
+    public GraphicsPipelineBuilderOptional ForRenderPass(
+        VkRenderPass renderPass)
     {
-        GraphicsPipelineBuilder _scope = scope;
-        public GraphicsPipelineBuilderOptional WithDynamicStages(List<DynamicState> dynamicStates)
+        _renderPass = renderPass;
+
+        return new GraphicsPipelineBuilderOptional(this);
+    }
+
+    public class GraphicsPipelineBuilderOptional(
+        GraphicsPipelineBuilder scope
+    )
+    {
+        private readonly GraphicsPipelineBuilder _scope = scope;
+
+        public GraphicsPipelineBuilderOptional WithDynamicStages(
+            List<DynamicState> dynamicStates)
         {
             _scope._dynamicStates = dynamicStates;
             return this;
         }
 
-        public GraphicsPipelineBuilderOptional WithFixedFunctions(Action<FixedFunctionBuilder> f)
+        public GraphicsPipelineBuilderOptional WithFixedFunctions(
+            Action<FixedFunctionBuilder> f)
         {
             f(new FixedFunctionBuilder(_scope));
             return this;
         }
 
-        public GraphicsPipelineBuilderInputAssembly WithVertexInput(Action<AttributeAggregator> f)
+        public GraphicsPipelineBuilderInputAssembly WithVertexInput(
+            Action<AttributeAggregator> f)
         {
             _scope._vertexInputBindingDescriptions = [];
             _scope._vertexInputAttributeDescriptions = [];
@@ -53,54 +81,58 @@ public sealed class GraphicsPipelineBuilder
         }
     }
 
-
-
-
-    public GraphicsPipelineBuilderOptional ForRenderPass(VkRenderPass renderPass)
-    {
-        _renderPass = renderPass;
-
-        return new GraphicsPipelineBuilderOptional(this);
-    }
-
-
     public class AttributeAggregator(GraphicsPipelineBuilder scope)
     {
-        GraphicsPipelineBuilder _scope = scope;
+        private readonly GraphicsPipelineBuilder _scope = scope;
 
-        public AttributeAggregator AddBindingFor<T>(int binding, VertexInputRate inputRate)
+        public AttributeAggregator AddBindingFor<T>(int binding,
+            VertexInputRate inputRate)
             where T : unmanaged, IVertexData<T>
         {
-            var (attributeDescr, bindingDescr) = default(T).CreateVertexInputDescription(binding, inputRate);
+            var (attributeDescr, bindingDescr) =
+                default(T).CreateVertexInputDescription(binding,
+                    inputRate);
             _scope._vertexInputBindingDescriptions.Add(bindingDescr);
-            _scope._vertexInputAttributeDescriptions.AddRange(attributeDescr);
+            _scope._vertexInputAttributeDescriptions.AddRange(
+                attributeDescr);
             return this;
         }
     }
 
-    public class GraphicsPipelineBuilderInputAssembly(GraphicsPipelineBuilder scope)
+    public class GraphicsPipelineBuilderInputAssembly(
+        GraphicsPipelineBuilder scope
+    )
     {
-        GraphicsPipelineBuilder _scope = scope;
+        private readonly GraphicsPipelineBuilder _scope = scope;
 
-        public GraphicsPipelineBuilderViewport WithInputAssembly(PrimitiveTopology topology, bool primitiveRestartEnable = false)
+        public GraphicsPipelineBuilderViewport WithInputAssembly(
+            PrimitiveTopology topology,
+            bool primitiveRestartEnable = false)
         {
-
-            var inputAssemblyState = new PipelineInputAssemblyStateCreateInfo()
-            {
-                SType = StructureType.PipelineInputAssemblyStateCreateInfo,
-                Topology = topology,
-                PrimitiveRestartEnable = primitiveRestartEnable
-            };
+            var inputAssemblyState =
+                new PipelineInputAssemblyStateCreateInfo
+                {
+                    SType =
+                        StructureType
+                            .PipelineInputAssemblyStateCreateInfo,
+                    Topology = topology,
+                    PrimitiveRestartEnable =
+                        primitiveRestartEnable
+                };
             _scope._inputAssemblyState = inputAssemblyState;
             return new GraphicsPipelineBuilderViewport(_scope);
         }
     }
 
-    public class GraphicsPipelineBuilderViewport(GraphicsPipelineBuilder scope)
+    public class GraphicsPipelineBuilderViewport(
+        GraphicsPipelineBuilder scope
+    )
     {
-        GraphicsPipelineBuilder _scope = scope;
+        private readonly GraphicsPipelineBuilder _scope = scope;
 
-        public GraphicsPipelineBuilderStages WithViewportAndScissor(Viewport viewport, Rect2D scissor)
+        public GraphicsPipelineBuilderStages WithViewportAndScissor(
+            Viewport viewport,
+            Rect2D scissor)
         {
             _scope._viewport = viewport;
             _scope._scissor = scissor;
@@ -108,11 +140,14 @@ public sealed class GraphicsPipelineBuilder
         }
     }
 
-    public class GraphicsPipelineBuilderStages(GraphicsPipelineBuilder scope)
+    public class GraphicsPipelineBuilderStages(
+        GraphicsPipelineBuilder scope
+    )
     {
-        GraphicsPipelineBuilder _scope = scope;
+        private readonly GraphicsPipelineBuilder _scope = scope;
 
-        public GraphicsPipelineBuilderLayout WithPipelineStages(Action<StageBuilder> f)
+        public GraphicsPipelineBuilderLayout WithPipelineStages(
+            Action<StageBuilder> f)
         {
             var aggregator = new StageBuilder(_scope);
             f(aggregator);
@@ -120,11 +155,15 @@ public sealed class GraphicsPipelineBuilder
         }
     }
 
-    public class GraphicsPipelineBuilderLayout(GraphicsPipelineBuilder scope)
+    public class GraphicsPipelineBuilderLayout(
+        GraphicsPipelineBuilder scope
+    )
     {
-        GraphicsPipelineBuilder _scope = scope;
+        private readonly GraphicsPipelineBuilder _scope = scope;
 
-        public GraphicsPipelineBuilderFinal WithLayouts(VkSetLayout[] setLayouts, PushConstantRange[] pushConstantRanges)
+        public GraphicsPipelineBuilderFinal WithLayouts(
+            VkSetLayout[] setLayouts,
+            PushConstantRange[] pushConstantRanges)
         {
             _scope._setLayouts = setLayouts;
             _scope._pushConstantRanges = pushConstantRanges;
@@ -134,35 +173,41 @@ public sealed class GraphicsPipelineBuilder
 
     public class FixedFunctionBuilder(GraphicsPipelineBuilder scope)
     {
-        GraphicsPipelineBuilder _scope = scope;
+        private readonly GraphicsPipelineBuilder _scope = scope;
 
-        public FixedFunctionBuilder Rasterization(Func<RasterizationBuilder, RasterizationBuilder> f)
+        public FixedFunctionBuilder Rasterization(
+            Func<RasterizationBuilder, RasterizationBuilder> f)
         {
             _scope._isRasterization = true;
             f(new RasterizationBuilder(_scope));
-            _scope._rasterizationSettings.SType = StructureType.PipelineRasterizationStateCreateInfo;
+            _scope._rasterizationSettings.SType = StructureType
+                .PipelineRasterizationStateCreateInfo;
             return this;
         }
 
-        public FixedFunctionBuilder ColorBlending(IEnumerable<PipelineColorBlendAttachmentState> attachmentStates, bool logicOpEnable = false)
+        public FixedFunctionBuilder ColorBlending(
+            IEnumerable<PipelineColorBlendAttachmentState>
+                attachmentStates,
+            bool logicOpEnable = false)
         {
             _scope._colorBlends = [.. attachmentStates];
             _scope._logicOpEnable = logicOpEnable;
             return this;
         }
 
-        public FixedFunctionBuilder Multisampling(SampleCountFlags rasterizationSamples,
-                                                    float minSampleShading = 1.0f,
-                                                    bool sampleShadingEnable = false,
-                                                    bool alphaToCoverageEnable = false,
-                                                    bool alphaToOneEnable = false,
-                                                    uint? sampleMask = null
-                                                  )
+        public FixedFunctionBuilder Multisampling(
+            SampleCountFlags rasterizationSamples,
+            float minSampleShading = 1.0f,
+            bool sampleShadingEnable = false,
+            bool alphaToCoverageEnable = false,
+            bool alphaToOneEnable = false,
+            uint? sampleMask = null)
         {
-
             PipelineMultisampleStateCreateInfo multisampling = new()
             {
-                SType = StructureType.PipelineMultisampleStateCreateInfo,
+                SType =
+                    StructureType
+                        .PipelineMultisampleStateCreateInfo,
                 SampleShadingEnable = sampleShadingEnable,
                 RasterizationSamples = rasterizationSamples,
                 MinSampleShading = minSampleShading,
@@ -176,7 +221,8 @@ public sealed class GraphicsPipelineBuilder
             return this;
         }
 
-        public FixedFunctionBuilder DepthStencil(PipelineDepthStencilStateCreateInfo state)
+        public FixedFunctionBuilder DepthStencil(
+            PipelineDepthStencilStateCreateInfo state)
         {
             _scope._isDepthStencil = true;
             _scope._pipelineDepthStencilSettings = state;
@@ -184,110 +230,125 @@ public sealed class GraphicsPipelineBuilder
         }
     }
 
-    public class GraphicsPipelineBuilderFinal(GraphicsPipelineBuilder scope)
+    public class GraphicsPipelineBuilderFinal(
+        GraphicsPipelineBuilder scope
+    )
     {
-        private GraphicsPipelineBuilder _scope = scope;
+        private readonly GraphicsPipelineBuilder _scope = scope;
 
-        public unsafe VkGraphicsPipeline Build(VkContext ctx, VkDevice device,
-                                        int subpassIndex)
+        public unsafe VkGraphicsPipeline Build(VkContext ctx,
+            VkDevice device,
+            int subpassIndex)
         {
-            using var vertexInputStateCreateInfo = new VkVertexInputStateCreateInfo(_scope._vertexInputBindingDescriptions, _scope._vertexInputAttributeDescriptions);
-            
+            using var vertexInputStateCreateInfo =
+                new VkVertexInputStateCreateInfo(
+                    _scope._vertexInputBindingDescriptions,
+                    _scope._vertexInputAttributeDescriptions);
 
             uint sampleMask = 0;
             if (_scope._sampleMask != null)
             {
                 sampleMask = _scope._sampleMask.Value;
-                _scope._multisamplingSettings.PSampleMask = (uint*)Unsafe.AsPointer(ref sampleMask);
+                _scope._multisamplingSettings.PSampleMask =
+                    (uint*)Unsafe.AsPointer(ref sampleMask);
             }
+
             var pRasterization = _scope._isRasterization
-                ? (PipelineRasterizationStateCreateInfo*)Unsafe.AsPointer(ref _scope._rasterizationSettings) : null;
+                ? (PipelineRasterizationStateCreateInfo*)
+                Unsafe.AsPointer(ref _scope._rasterizationSettings)
+                : null;
 
             var pMultisapmling = _scope._isMultisampling
-                ? (PipelineMultisampleStateCreateInfo*)Unsafe.AsPointer(ref _scope._multisamplingSettings) : null;
+                ? (PipelineMultisampleStateCreateInfo*)
+                Unsafe.AsPointer(ref _scope._multisamplingSettings)
+                : null;
 
-            fixed (PipelineColorBlendAttachmentState* pColorBlend = _scope._colorBlends)
+            fixed (PipelineColorBlendAttachmentState* pColorBlend =
+                       _scope._colorBlends)
             {
-                PipelineColorBlendStateCreateInfo colorBlendInfo = new()
-                {
-                    SType = StructureType.PipelineColorBlendStateCreateInfo,
-                    LogicOpEnable = _scope._logicOpEnable,
-                    AttachmentCount = (uint)_scope._colorBlends.Length,
-                    PAttachments = pColorBlend
-                };
-
-
+                PipelineColorBlendStateCreateInfo colorBlendInfo =
+                    new()
+                    {
+                        SType =
+                            StructureType
+                                .PipelineColorBlendStateCreateInfo,
+                        LogicOpEnable = _scope._logicOpEnable,
+                        AttachmentCount =
+                            (uint)_scope._colorBlends.Length,
+                        PAttachments = pColorBlend
+                    };
 
                 var pDepthStencil = _scope._isDepthStencil
-                    ? (PipelineDepthStencilStateCreateInfo*)Unsafe.AsPointer(ref _scope._pipelineDepthStencilSettings) : null;
+                    ? (PipelineDepthStencilStateCreateInfo*)
+                    Unsafe.AsPointer(
+                        ref _scope._pipelineDepthStencilSettings)
+                    : null;
 
-                var result = new VkGraphicsPipeline(
-                        ctx,
-                        device,
-                        _scope._shaderInfos,
-                        _scope._setLayouts,
-                        _scope._pushConstantRanges,
-                        _scope._renderPass,
-                        subpassIndex,
-                        _scope._dynamicStates,
-                        vertexInputStateCreateInfo,
-                        _scope._viewport,
-                        _scope._scissor,
-                        _scope._inputAssemblyState,
-                        pRasterization,
-                        pMultisapmling,
-                        &colorBlendInfo,
-                        pDepthStencil
-                );
+                var result = new VkGraphicsPipeline(ctx, device,
+                    _scope._shaderInfos, _scope._setLayouts,
+                    _scope._pushConstantRanges, _scope._renderPass,
+                    subpassIndex, _scope._dynamicStates,
+                    vertexInputStateCreateInfo, _scope._viewport,
+                    _scope._scissor, _scope._inputAssemblyState,
+                    pRasterization, pMultisapmling, &colorBlendInfo,
+                    pDepthStencil);
 
                 return result;
             }
         }
     }
 
-
-
     public class StageBuilder
     {
-        private GraphicsPipelineBuilder _scope;
+        private readonly GraphicsPipelineBuilder _scope;
 
         internal StageBuilder(GraphicsPipelineBuilder scope)
         {
             _scope = scope;
         }
+
         public StageBuilder Vertex(VkShaderInfo shaderInfo)
         {
-            _scope._shaderInfos[ShaderStageFlags.VertexBit] = shaderInfo;
+            _scope._shaderInfos[ShaderStageFlags.VertexBit] =
+                shaderInfo;
             return this;
         }
 
         public StageBuilder Fragment(VkShaderInfo shaderInfo)
         {
-            _scope._shaderInfos[ShaderStageFlags.FragmentBit] = shaderInfo;
+            _scope._shaderInfos[ShaderStageFlags.FragmentBit] =
+                shaderInfo;
             return this;
         }
 
         public StageBuilder Geometry(VkShaderInfo shaderInfo)
         {
-            _scope._shaderInfos[ShaderStageFlags.GeometryBit] = shaderInfo;
+            _scope._shaderInfos[ShaderStageFlags.GeometryBit] =
+                shaderInfo;
             return this;
         }
 
-        public StageBuilder Tesselation(VkShaderInfo tessControl, VkShaderInfo tessEval)
+        public StageBuilder Tesselation(VkShaderInfo tessControl,
+            VkShaderInfo tessEval)
         {
-            _scope._shaderInfos[ShaderStageFlags.TessellationControlBit] = tessControl;
-            _scope._shaderInfos[ShaderStageFlags.TessellationEvaluationBit] = tessEval;
+            _scope._shaderInfos[
+                    ShaderStageFlags.TessellationControlBit] =
+                tessControl;
+            _scope._shaderInfos[
+                    ShaderStageFlags.TessellationEvaluationBit] =
+                tessEval;
             return this;
         }
     }
 
     public class RasterizationBuilder(GraphicsPipelineBuilder scope)
     {
-        private GraphicsPipelineBuilder _scope = scope;
+        private readonly GraphicsPipelineBuilder _scope = scope;
 
         public RasterizationBuilder WithRasterizerDiscard()
         {
-            _scope._rasterizationSettings.RasterizerDiscardEnable = true;
+            _scope._rasterizationSettings.RasterizerDiscardEnable =
+                true;
             return this;
         }
 
@@ -297,7 +358,11 @@ public sealed class GraphicsPipelineBuilder
             return this;
         }
 
-        public RasterizationBuilder WithSettings(PolygonMode polygonMode, CullModeFlags cullMode, FrontFace frontFace, float lineWidth)
+        public RasterizationBuilder WithSettings(
+            PolygonMode polygonMode,
+            CullModeFlags cullMode,
+            FrontFace frontFace,
+            float lineWidth)
         {
             _scope._rasterizationSettings.PolygonMode = polygonMode;
             _scope._rasterizationSettings.LineWidth = lineWidth;
@@ -306,12 +371,17 @@ public sealed class GraphicsPipelineBuilder
             return this;
         }
 
-        public RasterizationBuilder WithDepthBias(float constantFactor, float clamp, float slopeFactor)
+        public RasterizationBuilder WithDepthBias(
+            float constantFactor,
+            float clamp,
+            float slopeFactor)
         {
             _scope._rasterizationSettings.DepthBiasEnable = true;
-            _scope._rasterizationSettings.DepthBiasConstantFactor = constantFactor;
+            _scope._rasterizationSettings.DepthBiasConstantFactor =
+                constantFactor;
             _scope._rasterizationSettings.DepthBiasClamp = clamp;
-            _scope._rasterizationSettings.DepthBiasSlopeFactor = slopeFactor;
+            _scope._rasterizationSettings.DepthBiasSlopeFactor =
+                slopeFactor;
             return this;
         }
     }

@@ -9,11 +9,15 @@
 # Getting started:
 
 Unzip archive and run:
+
 ```bash
 ./Sitnikov
 ```
+
 # Config structure:
+
 ## Keys:
+
 ```yaml
 e: 0.12 ---# Eccentricity
 

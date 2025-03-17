@@ -1,5 +1,4 @@
 #version 450
-//#extension GL_EXT_debug_printf : enable
 #define M_PI 3.1415926535897932384626433832795
 layout(local_size_x=1024, local_size_y=1, local_size_z = 1) in;
 layout(binding = 0, r32f) uniform readonly image2D inputImage;
@@ -24,23 +23,11 @@ layout(push_constant) uniform PushConstants {
     float T;
 }push;
 
-float bilinearFilter(vec2 uv) {
+float sampleE(vec2 uv) {
     ivec2 texSize = imageSize(inputImage);
-    vec2 texelSize = 1.0 / vec2(texSize);
-
-    vec2 texelPos = uv * texSize - 0.5;
-    ivec2 texel00 = ivec2(floor(texelPos));
-    ivec2 texel11 = texel00 + ivec2(1, 1);
-
-    float v00 = imageLoad(inputImage, clamp(texel00, ivec2(0), texSize - 1)).r;
-    float v01 = imageLoad(inputImage, clamp(ivec2(texel00.x, texel11.y), ivec2(0), texSize - 1)).r;
-    float v10 = imageLoad(inputImage, clamp(ivec2(texel11.x, texel00.y), ivec2(0), texSize - 1)).r;
-    float v11 = imageLoad(inputImage, clamp(texel11, ivec2(0), texSize - 1)).r;
-
-    vec2 f = fract(texelPos);
-    float top = mix(v00, v10, f.x);
-    float bottom = mix(v01, v11, f.x);
-    return mix(top, bottom, f.y);
+    ivec2 texelPos = ivec2(floor(uv*texSize));
+    float v00 = imageLoad(inputImage, texelPos).r;
+    return v00;
 }
 
 vec2 dT(vec2 p) {
@@ -50,16 +37,15 @@ vec2 dT(vec2 p) {
 vec2 dU(vec2 q) {
     float M = q.y;
     if(M > 2*M_PI) {
-        M = mod(q.y, 2*M_PI);
+        M = mod(M, 2*M_PI);
     }
     float z = q.x;
     vec2 uv = vec2(push.ecc, M/(2.0*M_PI));
-    float E = 2*M_PI*bilinearFilter(uv);
+    float E = 2*M_PI*sampleE(uv);
     E = M + push.ecc*sin(E);
 
     float r = 1-push.ecc*cos(E);
     r = sqrt(r*r+z*z);
-    //debugPrintfEXT("%f %f %f", push.ecc, M, E);
     return vec2(z/(r*r*r),0);
 }
 
@@ -70,7 +56,6 @@ void main() {
     vec2 p = vec2(zv.y, 0);
     vec2 q = vec2(zv.x, push.T);
     float delta = push.delta;
-    //int iters = min(timesteps.length(), 1024);
     for(int i = 0; i<timesteps.length(); i+=2) {
         q = q + delta*timesteps[i]*dT(p);
         p = p - delta*timesteps[i+1]*dU(q);
