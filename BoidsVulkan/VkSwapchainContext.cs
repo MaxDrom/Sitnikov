@@ -26,11 +26,11 @@ public unsafe class VkSwapchainContext : IDisposable
     }
 
     public void CreateUnmanagedSwapchain(
-        ref SwapchainCreateInfoKHR createInfo,
+        in SwapchainCreateInfoKHR createInfo,
         out SwapchainKHR swapchain)
     {
         if (_swapchainApi.CreateSwapchain(_device.Device,
-                out createInfo, null, out swapchain) !=
+                in createInfo, null, out swapchain) !=
             Result.Success)
             throw new Exception("Failed to create swapchain!");
     }

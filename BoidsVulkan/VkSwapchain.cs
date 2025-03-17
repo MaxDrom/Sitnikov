@@ -71,7 +71,7 @@ public class VkSwapchain : IDisposable
                 }
 
                 swapchainCtx.CreateUnmanagedSwapchain(
-                    ref swapchainCreateInfo, out _swapchain);
+                    in swapchainCreateInfo, out _swapchain);
             }
         }
 
