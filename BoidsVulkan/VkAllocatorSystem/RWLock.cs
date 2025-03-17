@@ -30,7 +30,7 @@ internal class RwLock : IDisposable
 
         public WriteLockToken(ReaderWriterLockSlim @lock)
         {
-            this._lock = @lock;
+            _lock = @lock;
             @lock.EnterWriteLock();
         }
 
@@ -46,7 +46,7 @@ internal class RwLock : IDisposable
 
         public ReadLockToken(ReaderWriterLockSlim @lock)
         {
-            this._lock = @lock;
+            _lock = @lock;
             @lock.EnterReadLock();
         }
 
@@ -62,7 +62,7 @@ internal class RwLock : IDisposable
 
         public UpgradeLockToken(ReaderWriterLockSlim @lock)
         {
-            this._lock = @lock;
+            _lock = @lock;
             @lock.EnterUpgradeableReadLock();
         }
 

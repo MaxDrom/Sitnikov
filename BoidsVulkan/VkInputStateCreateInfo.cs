@@ -7,9 +7,9 @@ public class VkVertexInputStateCreateInfo : IDisposable
 {
     private GCHandle _bindingDescriptionsHandle;
 
-    private GCHandle _vertexInputAttributeDescriptionsHandle;
-
     private bool _disposedValue;
+
+    private GCHandle _vertexInputAttributeDescriptionsHandle;
 
     public VkVertexInputStateCreateInfo(
         IEnumerable<VertexInputBindingDescription>
@@ -42,7 +42,7 @@ public class VkVertexInputStateCreateInfo : IDisposable
                     PVertexAttributeDescriptions =
                         (VertexInputAttributeDescription*)
                         _vertexInputAttributeDescriptionsHandle
-                            .AddrOfPinnedObject()
+                            .AddrOfPinnedObject(),
                 };
         }
     }

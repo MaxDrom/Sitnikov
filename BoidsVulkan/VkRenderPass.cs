@@ -48,7 +48,7 @@ public class VkRenderPass : IDisposable
                     ColorAttachmentCount =
                         (uint)subpassInfos[i]
                             .ColorAttachmentReferences.Length,
-                    PColorAttachments = clrAttachmentBuffer
+                    PColorAttachments = clrAttachmentBuffer,
                 };
                 clrAttachmentBuffer += subpassInfos[i]
                     .ColorAttachmentReferences.Length;
@@ -60,7 +60,7 @@ public class VkRenderPass : IDisposable
                 PSubpasses = psubpassDescr,
                 SubpassCount = (uint)subpassInfos.Length,
                 AttachmentCount =
-                    (uint)attachmentDescriptions.Count()
+                    (uint)attachmentDescriptions.Count(),
             };
 
             fixed (SubpassDependency* pdeps =

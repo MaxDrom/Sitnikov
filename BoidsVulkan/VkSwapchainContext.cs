@@ -110,7 +110,7 @@ public unsafe class VkSwapchainContext : IDisposable
             PSwapchains = pswapchainbuf,
             WaitSemaphoreCount = (uint)semaphoresCount,
             PWaitSemaphores = psemaphorebuf,
-            PImageIndices = pimagebuf
+            PImageIndices = pimagebuf,
         };
         _swapchainApi.QueuePresent(queue, ref presentInfo);
     }

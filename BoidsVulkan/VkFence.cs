@@ -16,7 +16,7 @@ public class VkFence : IDisposable
         FenceCreateInfo createInfo = new()
         {
             SType = StructureType.FenceCreateInfo,
-            Flags = FenceCreateFlags.SignaledBit
+            Flags = FenceCreateFlags.SignaledBit,
         };
 
         unsafe

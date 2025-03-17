@@ -30,26 +30,26 @@ public partial class GameWindow
         new()
         {
             position = new Vector2D<float>(-1f, -1f),
-            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f)
+            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f),
         },
 
         new()
         {
             position = new Vector2D<float>(1f, -1f),
-            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f)
+            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f),
         },
 
         new()
         {
             position = new Vector2D<float>(1f, 1f),
-            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f)
+            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f),
         },
 
         new()
         {
             position = new Vector2D<float>(-1f, 1f),
-            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f)
-        }
+            color = new Vector4D<float>(0.0f, 0.0f, 0.0f, 0.0001f),
+        },
     ];
 
     private readonly Vertex[] _vertices =
@@ -57,26 +57,26 @@ public partial class GameWindow
         new()
         {
             position = new Vector2D<float>(-0.003f, -0.003f),
-            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
+            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f),
         },
 
         new()
         {
             position = new Vector2D<float>(0.003f, -0.003f),
-            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
+            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f),
         },
 
         new()
         {
             position = new Vector2D<float>(0.003f, 0.003f),
-            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
+            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f),
         },
 
         new()
         {
             position = new Vector2D<float>(-0.003f, 0.003f),
-            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
-        }
+            color = new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f),
+        },
     ];
 
     private bool _firstrun = true;
@@ -98,7 +98,7 @@ public partial class GameWindow
             X = 0.0f,
             Y = 0.0f,
             Width = _swapchain.Extent.Width,
-            Height = _swapchain.Extent.Height
+            Height = _swapchain.Extent.Height,
         };
         Rect2D scissor = new(new Offset2D(0, 0), _swapchain.Extent);
         buffer.Reset(CommandBufferResetFlags.None);
@@ -117,7 +117,7 @@ public partial class GameWindow
                 SrcAccessMask = AccessFlags.None,
                 DstAccessMask = AccessFlags.MemoryReadBit,
                 Image = _textureBuffer.Image.Image,
-                SubresourceRange = subresourceRange
+                SubresourceRange = subresourceRange,
             };
 
             recording.PipelineBarrier(PipelineStageFlags.TopOfPipeBit,
@@ -131,7 +131,7 @@ public partial class GameWindow
                 var pushConstant2 = new PushConstant
                 {
                     xrange = new Vector2D<float>(-1, 1),
-                    yrange = new Vector2D<float>(-1, 1)
+                    yrange = new Vector2D<float>(-1, 1),
                 };
 
                 recording.BindPipline(_graphicsPipeline);
@@ -159,7 +159,7 @@ public partial class GameWindow
                                 .Item2),
                     yrange = new Vector2D<float>(
                         (float)_config.Visualization.RangeY.Item1,
-                        (float)_config.Visualization.RangeY.Item2)
+                        (float)_config.Visualization.RangeY.Item2),
                 };
                 _ctx.Api.CmdPushConstants(buffer.Buffer,
                     _graphicsPipeline.PipelineLayout,
@@ -186,7 +186,7 @@ public partial class GameWindow
                         ImageAspectFlags.ColorBit, 0, 0, 1),
                 DstSubresource =
                     new ImageSubresourceLayers(
-                        ImageAspectFlags.ColorBit, 0, 0, 1)
+                        ImageAspectFlags.ColorBit, 0, 0, 1),
             };
 
             ImageMemoryBarrier[] barriers =
@@ -200,7 +200,7 @@ public partial class GameWindow
                         AccessFlags.ColorAttachmentWriteBit,
                     DstAccessMask = AccessFlags.TransferReadBit,
                     Image = _textureBuffer.Image.Image,
-                    SubresourceRange = subresourceRange
+                    SubresourceRange = subresourceRange,
                 },
 
                 new()
@@ -211,8 +211,8 @@ public partial class GameWindow
                     SrcAccessMask = AccessFlags.None,
                     DstAccessMask = AccessFlags.TransferWriteBit,
                     Image = _swapchain.Images[imageIndex].Image,
-                    SubresourceRange = subresourceRange
-                }
+                    SubresourceRange = subresourceRange,
+                },
             ];
 
             recording.PipelineBarrier(
@@ -234,7 +234,7 @@ public partial class GameWindow
                 SrcAccessMask = AccessFlags.TransferWriteBit,
                 DstAccessMask = AccessFlags.None,
                 Image = _swapchain.Images[imageIndex].Image,
-                SubresourceRange = subresourceRange
+                SubresourceRange = subresourceRange,
             };
 
             recording.PipelineBarrier(PipelineStageFlags.TransferBit,
@@ -269,7 +269,8 @@ public partial class GameWindow
                        .SimultaneousUseBit))
             {
                 recording.CopyBuffer(_particleSystem.Buffer,
-                    _instanceBuffer, 0, 0, _particleSystem.Buffer.Size);
+                    _instanceBuffer, 0, 0,
+                    _particleSystem.Buffer.Size);
             }
 
             _totaltime = 0;
@@ -284,7 +285,7 @@ public partial class GameWindow
                 color = new Vector4D<float>(0, 0, 0,
                     1.0f - (float)Math.Exp(
                         -_config.Visualization.Fade * frametime)),
-                offset = new Vector2D<float>(0, 1)
+                offset = new Vector2D<float>(0, 1),
             };
         }
 
@@ -317,7 +318,8 @@ public partial class GameWindow
             _fences[_frameIndex],
             [_imageAvailableSemaphores[_frameIndex]],
             [_renderFinishedSemaphores[_frameIndex]]);
-        _swapchainCtx.QueuePresent(_device.PresentQueue, [_imageIndex],
+        _swapchainCtx.QueuePresent(_device.PresentQueue,
+            [_imageIndex],
             [_swapchain], [_renderFinishedSemaphores[_frameIndex]]);
         _frameIndex = ++_frameIndex % _framesInFlight;
     }

@@ -27,7 +27,7 @@ public class VkComputePipeline : IVkPipeline, IDisposable
             SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.ComputeBit,
             Module = computeShader.ShaderModule.ShaderModule,
-            PName = (byte*)pname
+            PName = (byte*)pname,
         };
 
         if (computeShader.SpecializationInfo != null)
@@ -40,7 +40,7 @@ public class VkComputePipeline : IVkPipeline, IDisposable
         {
             SType = StructureType.ComputePipelineCreateInfo,
             Stage = stageInfo,
-            Layout = _pipelineLayout.PipelineLayout
+            Layout = _pipelineLayout.PipelineLayout,
         };
         _ctx.Api.CreateComputePipelines(_device.Device, default, 1u,
             ref computeCreateInfo, null, out _pipeline);

@@ -25,14 +25,14 @@ public interface IVertexData<TSelf>
                 Location = (uint)attribute.Location,
                 Format = attribute.Format,
                 Offset =
-                    (uint)Marshal.OffsetOf<TSelf>(property.Name)
+                    (uint)Marshal.OffsetOf<TSelf>(property.Name),
             });
 
         var bind = new VertexInputBindingDescription
         {
             Binding = (uint)binding,
             Stride = (uint)Marshal.SizeOf<TSelf>(),
-            InputRate = inputRate
+            InputRate = inputRate,
         };
 
         return ([.. result], bind);

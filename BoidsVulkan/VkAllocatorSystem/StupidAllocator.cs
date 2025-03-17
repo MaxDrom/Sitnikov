@@ -50,7 +50,7 @@ public class StupidAllocator : VkAllocator
         _memoryTypesIndices =
         [
             .. memoryTypesScores.OrderByDescending(z => z.Value)
-                .Select(z => z.Key)
+                .Select(z => z.Key),
         ];
     }
 
@@ -76,7 +76,7 @@ public class StupidAllocator : VkAllocator
             {
                 SType = StructureType.MemoryAllocateInfo,
                 AllocationSize = requirements.Size,
-                MemoryTypeIndex = (uint)i
+                MemoryTypeIndex = (uint)i,
             };
 
             if (Ctx.Api.AllocateMemory(Device.Device,

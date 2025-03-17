@@ -47,7 +47,7 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
                     StructureType.PipelineShaderStageCreateInfo,
                 Stage = stageFlag,
                 Module = shaderInfo.ShaderModule.ShaderModule,
-                PName = (byte*)pname
+                PName = (byte*)pname,
             };
             if (shaderInfo.SpecializationInfo != null)
             {
@@ -62,7 +62,7 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
         PipelineDynamicStateCreateInfo dynamicStateCreateInfo = new()
         {
             SType = StructureType.PipelineDynamicStateCreateInfo,
-            DynamicStateCount = (uint)dynamicStates.Count()
+            DynamicStateCount = (uint)dynamicStates.Count(),
         };
 
         fixed (DynamicState* pDynamicStates = dynamicStates.ToArray())
@@ -85,7 +85,7 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
                     ViewportCount = 1,
                     ScissorCount = 1,
                     PViewports = &viewport,
-                    PScissors = &scissor
+                    PScissors = &scissor,
                 };
 
                 GraphicsPipelineCreateInfo createInfo = new()
@@ -106,7 +106,7 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
                     Subpass = (uint)subpassIndex,
                     Layout = _pipelineLayout.PipelineLayout,
                     PInputAssemblyState = &inputAssemblyState,
-                    PViewportState = &viewportInfo
+                    PViewportState = &viewportInfo,
                 };
 
                 if (_ctx.Api.CreateGraphicsPipelines(_device.Device,

@@ -33,7 +33,7 @@ public class VkDescriptorSetUpdater
             DstBinding = (uint)binding,
             DescriptorType = descriptorType,
             DstSet = descriptorSet,
-            DstArrayElement = (uint)arrayElement
+            DstArrayElement = (uint)arrayElement,
         };
         _buffersWrites.Add((writeDescriptor, descriptorInfos));
         return this;
@@ -52,7 +52,7 @@ public class VkDescriptorSetUpdater
             DstBinding = (uint)binding,
             DescriptorType = descriptorType,
             DstSet = descriptorSet,
-            DstArrayElement = (uint)arrayElement
+            DstArrayElement = (uint)arrayElement,
         };
         _imageWrites.Add((writeDescriptor, descriptorInfos));
         return this;

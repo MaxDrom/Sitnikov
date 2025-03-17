@@ -34,19 +34,19 @@ public class VkContext : IDisposable
         }
 #if DEBUG
         var pPEnabledLayers = (byte**)SilkMarshal.StringArrayToPtr([
-            .. enabledLayers
+            .. enabledLayers,
         ]);
 #endif
 
         var pPEnabledInstanceExtensions =
             (byte**)SilkMarshal.StringArrayToPtr([
-                .. enabledInstanceExtensions
+                .. enabledInstanceExtensions,
             ]);
 
         var appInfo = new ApplicationInfo
         {
             SType = StructureType.ApplicationInfo,
-            ApiVersion = Vk.Version13
+            ApiVersion = Vk.Version13,
         };
 #if DEBUG
         var debugInfo = new DebugUtilsMessengerCreateInfoEXT
@@ -64,12 +64,12 @@ public class VkContext : IDisposable
                     .DeviceAddressBindingBitExt,
             PfnUserCallback =
                 (DebugUtilsMessengerCallbackFunctionEXT)
-                DebugCallback
+                DebugCallback,
         };
 
         var validationFeatureEnables = new[]
         {
-            ValidationFeatureEnableEXT.DebugPrintfExt
+            ValidationFeatureEnableEXT.DebugPrintfExt,
         };
 
         fixed (ValidationFeatureEnableEXT* pEnabledFeatures =
@@ -80,7 +80,7 @@ public class VkContext : IDisposable
                 SType = StructureType.ValidationFeaturesExt,
                 EnabledValidationFeatureCount =
                     (uint)validationFeatureEnables.Length,
-                PEnabledValidationFeatures = pEnabledFeatures
+                PEnabledValidationFeatures = pEnabledFeatures,
             };
 
             // Теперь validationFeatures можно использовать в дальнейшем коде
@@ -100,7 +100,7 @@ public class VkContext : IDisposable
                 PpEnabledExtensionNames = pPEnabledInstanceExtensions,
                 PApplicationInfo = &appInfo,
 #if DEBUG
-                PNext = &validationFeatures
+                PNext = &validationFeatures,
 #endif
             };
             if (Api.CreateInstance(ref instanceInfo, null,

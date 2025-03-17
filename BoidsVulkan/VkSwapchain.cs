@@ -46,7 +46,7 @@ public class VkSwapchain : IDisposable
             Clipped = clipped,
             OldSwapchain = oldSwapchain == null
                 ? _swapchain
-                : SilkMarshal.NullRef<SwapchainKHR>()
+                : SilkMarshal.NullRef<SwapchainKHR>(),
         };
         var hashSet = familyIndicies.ToHashSet();
         unsafe

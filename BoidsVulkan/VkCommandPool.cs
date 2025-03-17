@@ -23,7 +23,7 @@ public class VkCommandPool : IDisposable
         {
             SType = StructureType.CommandPoolCreateInfo,
             Flags = flags,
-            QueueFamilyIndex = queueFamilyIndex
+            QueueFamilyIndex = queueFamilyIndex,
         };
 
         unsafe
@@ -54,7 +54,7 @@ public class VkCommandPool : IDisposable
             SType = StructureType.CommandBufferAllocateInfo,
             CommandPool = _cmdPool,
             Level = level,
-            CommandBufferCount = (uint)n
+            CommandBufferCount = (uint)n,
         };
 
         _ctx.Api.AllocateCommandBuffers(_device.Device, &info, tmp);

@@ -17,7 +17,7 @@ public class VkSemaphore : IDisposable
         _device = device;
         SemaphoreCreateInfo createInfo = new()
         {
-            SType = StructureType.SemaphoreCreateInfo
+            SType = StructureType.SemaphoreCreateInfo,
         };
 
         unsafe

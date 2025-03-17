@@ -101,7 +101,7 @@ public unsafe class VkDevice : IDisposable
                 SType = StructureType.DeviceQueueCreateInfo,
                 QueueCount = 1,
                 QueueFamilyIndex = familyIndicies[i],
-                PQueuePriorities = &defaultPriority
+                PQueuePriorities = &defaultPriority,
             };
         }
 
@@ -120,7 +120,7 @@ public unsafe class VkDevice : IDisposable
                 PpEnabledExtensionNames = pEnabledExtensionNames,
                 QueueCreateInfoCount =
                     (uint)queueCreateInfos.Count(),
-                PQueueCreateInfos = pqueueCreateInfos
+                PQueueCreateInfos = pqueueCreateInfos,
             };
         }
 

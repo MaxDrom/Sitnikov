@@ -136,7 +136,7 @@ public sealed class ParticleSystemGpu : IParticleSystem
             BaseMipLevel = 0,
             LevelCount = 1,
             BaseArrayLayer = 0,
-            LayerCount = 1
+            LayerCount = 1,
         };
 
         using var shaderModule = new VkShaderModule(ctx, _device,
@@ -148,22 +148,22 @@ public sealed class ParticleSystemGpu : IParticleSystem
                 Binding = 0,
                 DescriptorType = DescriptorType.StorageImage,
                 DescriptorCount = 1,
-                StageFlags = ShaderStageFlags.ComputeBit
+                StageFlags = ShaderStageFlags.ComputeBit,
             },
             new()
             {
                 Binding = 1,
                 DescriptorType = DescriptorType.StorageBuffer,
                 DescriptorCount = 1,
-                StageFlags = ShaderStageFlags.ComputeBit
+                StageFlags = ShaderStageFlags.ComputeBit,
             },
             new()
             {
                 Binding = 2,
                 DescriptorType = DescriptorType.StorageBuffer,
                 DescriptorCount = 1,
-                StageFlags = ShaderStageFlags.ComputeBit
-            }
+                StageFlags = ShaderStageFlags.ComputeBit,
+            },
         ];
         using var layout = new VkSetLayout(_ctx, _device, bindings);
         PushConstantRange pushConstant =
@@ -201,7 +201,7 @@ public sealed class ParticleSystemGpu : IParticleSystem
 
         _descriptorPool = new VkDescriptorPool(ctx, device, [
             new DescriptorPoolSize(DescriptorType.StorageImage, 1),
-            new DescriptorPoolSize(DescriptorType.StorageBuffer, 2)
+            new DescriptorPoolSize(DescriptorType.StorageBuffer, 2),
         ], 1);
 
         _descriptorSet =
@@ -248,7 +248,7 @@ public sealed class ParticleSystemGpu : IParticleSystem
                 Image = _eccentricityTexture.Image.Image,
                 SubresourceRange =
                     new ImageSubresourceRange(
-                        ImageAspectFlags.ColorBit, 0, 1, 0, 1)
+                        ImageAspectFlags.ColorBit, 0, 1, 0, 1),
             };
             recording.PipelineBarrier(PipelineStageFlags.TopOfPipeBit,
                 PipelineStageFlags.ComputeShaderBit, 0,
@@ -262,7 +262,7 @@ public sealed class ParticleSystemGpu : IParticleSystem
                 N = _n,
                 delta = (float)delta,
                 T = (float)(totalTime % (Math.PI * 2)),
-                ecc = (float)_e
+                ecc = (float)_e,
             };
             _ctx.Api.CmdPushConstants(_cmdBuffer.Buffer,
                 _computePipeline.PipelineLayout,
@@ -317,11 +317,11 @@ public sealed class ParticleSystemGpu : IParticleSystem
                             ImageAspectFlags.ColorBit,
                         MipLevel = 0,
                         BaseArrayLayer = 0,
-                        LayerCount = 1
+                        LayerCount = 1,
                     },
                 ImageOffset = new Offset3D(0, 0, 0),
                 ImageExtent = new Extent3D((uint)image.Width,
-                    (uint)image.Height, 1)
+                    (uint)image.Height, 1),
             };
 
             ImageMemoryBarrier barrier = new()
@@ -334,7 +334,7 @@ public sealed class ParticleSystemGpu : IParticleSystem
                 Image = _eccentricityTexture.Image.Image,
                 SubresourceRange =
                     new ImageSubresourceRange(
-                        ImageAspectFlags.ColorBit, 0, 1, 0, 1)
+                        ImageAspectFlags.ColorBit, 0, 1, 0, 1),
             };
 
             recording.PipelineBarrier(PipelineStageFlags.TopOfPipeBit,

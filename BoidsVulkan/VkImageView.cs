@@ -24,7 +24,7 @@ public class VkImageView : IDisposable
             Format = image.Format,
             ViewType = viewType.Value,
             Components = mapping,
-            SubresourceRange = subresourceRange
+            SubresourceRange = subresourceRange,
         };
         _ctx = ctx;
         _device = device;

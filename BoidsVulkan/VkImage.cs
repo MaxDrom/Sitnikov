@@ -55,7 +55,7 @@ public class VkTexture : IDisposable
             InitialLayout = initialLayout,
             Usage = usageFlags,
             Samples = samples,
-            SharingMode = sharingMode
+            SharingMode = sharingMode,
         };
         if (_ctx.Api.CreateImage(_device.Device, ref imageInfo, null,
                 out var imageUnmanaged) != Result.Success)

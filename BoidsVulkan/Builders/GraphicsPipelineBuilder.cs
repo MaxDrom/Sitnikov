@@ -117,7 +117,7 @@ public sealed class GraphicsPipelineBuilder
                             .PipelineInputAssemblyStateCreateInfo,
                     Topology = topology,
                     PrimitiveRestartEnable =
-                        primitiveRestartEnable
+                        primitiveRestartEnable,
                 };
             _scope._inputAssemblyState = inputAssemblyState;
             return new GraphicsPipelineBuilderViewport(_scope);
@@ -213,7 +213,7 @@ public sealed class GraphicsPipelineBuilder
                 MinSampleShading = minSampleShading,
                 PSampleMask = null,
                 AlphaToCoverageEnable = alphaToCoverageEnable,
-                AlphaToOneEnable = alphaToOneEnable
+                AlphaToOneEnable = alphaToOneEnable,
             };
             _scope._sampleMask = sampleMask;
             _scope._isMultisampling = true;
@@ -275,7 +275,7 @@ public sealed class GraphicsPipelineBuilder
                         LogicOpEnable = _scope._logicOpEnable,
                         AttachmentCount =
                             (uint)_scope._colorBlends.Length,
-                        PAttachments = pColorBlend
+                        PAttachments = pColorBlend,
                     };
 
                 var pDepthStencil = _scope._isDepthStencil

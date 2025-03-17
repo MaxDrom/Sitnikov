@@ -43,7 +43,7 @@ public class VkSetLayout : IDisposable
                     StructureType.DescriptorSetLayoutCreateInfo,
                 Flags = DescriptorSetLayoutCreateFlags.None,
                 PBindings = pbindings,
-                BindingCount = (uint)bindings.Length
+                BindingCount = (uint)bindings.Length,
             };
             if (_ctx.Api.CreateDescriptorSetLayout(_device.Device,
                     ref info, null, out _setLayout) != Result.Success)
@@ -79,7 +79,7 @@ public class VkSetLayout : IDisposable
                     DescriptorCount =
                         (uint)descriptor.DescriptorCount,
                     StageFlags = descriptor.ShaderStageFlags,
-                    PImmutableSamplers = null
+                    PImmutableSamplers = null,
                 });
 
             fixed (DescriptorSetLayoutBinding* pbindings =
@@ -91,7 +91,7 @@ public class VkSetLayout : IDisposable
                         StructureType
                             .DescriptorSetLayoutCreateInfo,
                     BindingCount = (uint)bindings.Count,
-                    PBindings = pbindings
+                    PBindings = pbindings,
                 };
 
                 return new VkSetLayout(ctx, device, createInfo);

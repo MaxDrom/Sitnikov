@@ -26,7 +26,7 @@ public class VkShaderModule : IDisposable
                 {
                     SType = StructureType.ShaderModuleCreateInfo,
                     CodeSize = (nuint)bytes.Length,
-                    PCode = (uint*)pcode
+                    PCode = (uint*)pcode,
                 };
 
                 if (ctx.Api.CreateShaderModule(device.Device,

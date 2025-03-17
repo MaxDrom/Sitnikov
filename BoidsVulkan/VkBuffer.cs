@@ -38,7 +38,7 @@ public class VkBuffer<T> : IVkBuffer, IDisposable
                 SType = StructureType.BufferCreateInfo,
                 Size = Size,
                 Usage = usage,
-                SharingMode = sharingMode
+                SharingMode = sharingMode,
             };
 
             if (_ctx.Api.CreateBuffer(_device.Device, ref createInfo,
@@ -70,7 +70,7 @@ public class VkBuffer<T> : IVkBuffer, IDisposable
                 SType = StructureType.BufferCreateInfo,
                 Size = Size,
                 Usage = usage,
-                SharingMode = sharingMode
+                SharingMode = sharingMode,
             };
 
             if (_ctx.Api.CreateBuffer(_device.Device, ref createInfo,

@@ -60,7 +60,7 @@ internal class Program
         for (var i = 0; i < 10; i++)
         {
             sin = Math.Sin(e);
-            var newE = m + Program.E * sin;
+            var newE = m + E * sin;
             e = newE;
             e %= 2 * Math.PI;
             if (e >= Math.PI) e -= 2 * Math.PI;
@@ -79,7 +79,7 @@ internal class Program
             return result;
 
         var (e, sin) = SolveKeplerEq(m);
-        var res = 1 - Program.E * Math.Sqrt(1 - sin * sin);
+        var res = 1 - E * Math.Sqrt(1 - sin * sin);
         KeplerSolutions.TryAdd(m, res);
         return res;
     }
@@ -153,8 +153,7 @@ internal class Program
         if (config.Visualization.OnGPU)
             factory =
                 new ParticleSystemGpuFactory(E,
-                    config.Integrator.Order /
-                    2);
+                    config.Integrator.Order / 2);
         else
             factory = new ParticleSystemCpuFactory(_yoshida6);
 

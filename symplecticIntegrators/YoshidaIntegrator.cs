@@ -120,7 +120,7 @@ internal class
             new Dictionary<StepType, Func<TField, TSpace, TSpace, (
                 TSpace, TSpace)>>
             {
-                [StepType.DV] = StepByV, [StepType.DT] = StepByT
+                [StepType.DV] = StepByV, [StepType.DT] = StepByT,
             };
     }
 
@@ -140,7 +140,7 @@ internal class
 public enum StepType
 {
     DV = 0,
-    DT = 1
+    DT = 1,
 }
 
 public class Tracer<TField>

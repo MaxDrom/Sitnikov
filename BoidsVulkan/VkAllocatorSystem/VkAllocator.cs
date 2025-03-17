@@ -33,8 +33,8 @@ public abstract class VkAllocator : IDisposable
     {
         Ctx = ctx;
         Device = device;
-        this.RequiredProperties = requiredProperties;
-        this.PreferredFlags = preferredFlags;
+        RequiredProperties = requiredProperties;
+        PreferredFlags = preferredFlags;
     }
 
     public VkContext Ctx { get; }

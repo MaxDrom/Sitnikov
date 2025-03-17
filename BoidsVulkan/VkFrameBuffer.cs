@@ -27,7 +27,7 @@ public class VkFrameBuffer : IDisposable
             Width = width,
             Height = height,
             Layers = layers,
-            AttachmentCount = (uint)attachments.Count()
+            AttachmentCount = (uint)attachments.Count(),
         };
         unsafe
         {

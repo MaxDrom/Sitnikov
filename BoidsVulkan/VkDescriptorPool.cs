@@ -23,7 +23,7 @@ public class VkDescriptorPool : IDisposable
                 SType = StructureType.DescriptorPoolCreateInfo,
                 PoolSizeCount = (uint)poolSizes.Length,
                 PPoolSizes = ppoolSizes,
-                MaxSets = maxSets
+                MaxSets = maxSets,
             };
             if (_ctx.Api.CreateDescriptorPool(_device.Device,
                     ref createInfo, null, out _descriptorPool) !=
@@ -57,7 +57,7 @@ public class VkDescriptorPool : IDisposable
                 SType = StructureType.DescriptorSetAllocateInfo,
                 DescriptorSetCount = (uint)n,
                 PSetLayouts = psetLayouts,
-                DescriptorPool = _descriptorPool
+                DescriptorPool = _descriptorPool,
             };
             _ctx.Api.AllocateDescriptorSets(_device.Device,
                 ref allocateInfo, presult);
@@ -82,7 +82,7 @@ public class VkDescriptorPool : IDisposable
                 SType = StructureType.DescriptorSetAllocateInfo,
                 DescriptorSetCount = (uint)setLayouts.Length,
                 PSetLayouts = psetLayouts,
-                DescriptorPool = _descriptorPool
+                DescriptorPool = _descriptorPool,
             };
             _ctx.Api.AllocateDescriptorSets(_device.Device,
                 ref allocateInfo, presult);

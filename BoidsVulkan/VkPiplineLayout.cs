@@ -37,7 +37,7 @@ public class VkPiplineLayout : IDisposable
                     (uint)pushConstantRanges.Length,
                 PPushConstantRanges = pPushConstantRanges,
                 SetLayoutCount = (uint)setLayoutsArray.Length,
-                PSetLayouts = psetLayouts
+                PSetLayouts = psetLayouts,
             };
 
             if (_ctx.Api.CreatePipelineLayout(_device.Device,

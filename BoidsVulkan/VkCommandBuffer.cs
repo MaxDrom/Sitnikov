@@ -31,7 +31,7 @@ public class VkCommandBuffer
         CommandBufferBeginInfo beginInfo = new()
         {
             SType = StructureType.CommandBufferBeginInfo,
-            Flags = flags
+            Flags = flags,
         };
 
         unsafe
@@ -75,7 +75,7 @@ public class VkCommandBuffer
                             (uint)signalTmp.Length,
                         PSignalSemaphores = pSignalSemaphores,
                         CommandBufferCount = 1,
-                        PCommandBuffers = &pb
+                        PCommandBuffers = &pb,
                     };
 
                     if (_ctx.Api.QueueSubmit(queue, 1u,
@@ -121,7 +121,7 @@ public class VkCommandBuffer
                     PClearValues = &clearValue,
                     RenderArea = renderArea,
                     Framebuffer = framebuffer.Framebuffer,
-                    RenderPass = renderPass.RenderPass
+                    RenderPass = renderPass.RenderPass,
                 };
                 _ctx.Api.CmdBeginRenderPass(_buffer.Buffer,
                     ref renderPassInfo, SubpassContents.Inline);
@@ -142,7 +142,7 @@ public class VkCommandBuffer
             {
                 SrcOffset = srcOffset,
                 DstOffset = dstOffset,
-                Size = size
+                Size = size,
             };
             _ctx.Api.CmdCopyBuffer(_buffer.Buffer, src.Buffer,
                 dst.Buffer, 1, ref region);
