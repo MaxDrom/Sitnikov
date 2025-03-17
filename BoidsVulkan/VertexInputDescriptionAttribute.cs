@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Silk.NET.Vulkan;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public interface IVertexData<TSelf>
     where TSelf : unmanaged, IVertexData<TSelf>
@@ -17,7 +17,7 @@ public interface IVertexData<TSelf>
                      .GetFields()
                      .Select(z => (z,
                          z.GetCustomAttribute<
-                             VertexAttributeDescription>()))
+                             VertexInputDescriptionAttribute>()))
                      .Where(z => z.Item2 != null))
             result.Add(new VertexInputAttributeDescription
             {
@@ -39,14 +39,10 @@ public interface IVertexData<TSelf>
     }
 }
 
-public class VertexAttributeDescription : Attribute
+[AttributeUsage(AttributeTargets.Field)]
+public class VertexInputDescriptionAttribute(int location, Format format)
+    : Attribute
 {
-    public VertexAttributeDescription(int location, Format format)
-    {
-        Location = location;
-        Format = format;
-    }
-
-    public int Location { get; init; }
-    public Format Format { get; init; }
+    public int Location { get; init; } = location;
+    public Format Format { get; init; } = format;
 }

@@ -1,7 +1,7 @@
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public class VkSwapchain : IDisposable
 {
@@ -14,7 +14,7 @@ public class VkSwapchain : IDisposable
     public VkSwapchain(VkContext ctx,
         SurfaceKHR surface,
         VkSwapchainContext swapchainCtx,
-        IEnumerable<uint> familyIndicies,
+        uint[] familyIndicies,
         uint imageCount,
         Format imageFormat,
         ColorSpaceKHR imageColorSpace,

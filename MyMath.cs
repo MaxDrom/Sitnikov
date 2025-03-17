@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov;
 
 public static class MyMath
 {

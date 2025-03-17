@@ -1,4 +1,4 @@
-namespace VkAllocatorSystem;
+namespace Sitnikov.BoidsVulkan.VkAllocatorSystem;
 
 internal class RwLock : IDisposable
 {

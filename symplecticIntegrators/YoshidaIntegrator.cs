@@ -1,6 +1,7 @@
 using System.Numerics;
+using Sitnikov.interfaces;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov.symplecticIntegrators;
 
 public class
     YoshidaIntegrator<TField, TSpace> : SymplecticIntegrator<TField,
@@ -31,16 +32,16 @@ public class
                  (Two - MyMath.Root(Two, 2 * order + 1));
         var x0 = TField.One - Two * x1;
 
-        var fieldorder = (dynamic)order;
+        var fieldOrder = (dynamic)order;
 
         for (var i = 0; i < 100; i++)
         {
             var w11 = TField.One;
             var w12 = Two;
             var w21 = Two * MyMath.Pow(x1, 2 * order) *
-                      (Two * fieldorder + TField.One);
+                      (Two * fieldOrder + TField.One);
             var w22 = MyMath.Pow(x0, 2 * order) *
-                      (Two * fieldorder + TField.One);
+                      (Two * fieldOrder + TField.One);
             var det = w11 * w22 - w21 * w12;
             var y0 = Two * x1 + x0 - TField.One;
             var y1 = Two * MyMath.Pow(x1, 2 * order + 1) +

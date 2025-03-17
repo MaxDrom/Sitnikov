@@ -1,7 +1,7 @@
 using Silk.NET.Vulkan;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public class VkSemaphore : IDisposable
 {

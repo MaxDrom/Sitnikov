@@ -1,7 +1,7 @@
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public class VkGraphicsPipeline : IDisposable, IVkPipeline
 {

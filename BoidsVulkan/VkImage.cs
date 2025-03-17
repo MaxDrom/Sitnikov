@@ -1,7 +1,7 @@
 using Silk.NET.Vulkan;
-using VkAllocatorSystem;
+using Sitnikov.BoidsVulkan.VkAllocatorSystem;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public class VkImage
 {

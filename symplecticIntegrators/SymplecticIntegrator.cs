@@ -1,6 +1,7 @@
 using System.Numerics;
+using Sitnikov.interfaces;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov.symplecticIntegrators;
 
 public abstract class SymplecticIntegrator<TField, TSpace>
     where TField : IFloatingPoint<TField>

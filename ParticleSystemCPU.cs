@@ -1,21 +1,16 @@
-using BoidsVulkan;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using VkAllocatorSystem;
+using Sitnikov.BoidsVulkan;
+using Sitnikov.BoidsVulkan.VkAllocatorSystem;
+using Sitnikov.symplecticIntegrators;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov;
 
-public class ParticleSystemCpuFactory : IParticleSystemFactory
+public class ParticleSystemCpuFactory(
+    SymplecticIntegrator<double, Vector<double>> integrator
+)
+    : IParticleSystemFactory
 {
-    private readonly SymplecticIntegrator<double, Vector<double>>
-        _integrator;
-
-    public ParticleSystemCpuFactory(
-        SymplecticIntegrator<double, Vector<double>> integrator)
-    {
-        _integrator = integrator;
-    }
-
     public IParticleSystem Create(VkContext ctx,
         VkDevice device,
         VkCommandPool commandPool,
@@ -24,11 +19,11 @@ public class ParticleSystemCpuFactory : IParticleSystemFactory
         Instance[] initialData)
     {
         return new ParticleSystemCpu(staggingAllocator, initialData,
-            _integrator);
+            integrator);
     }
 }
 
-public class ParticleSystemCpu : IParticleSystem
+public sealed class ParticleSystemCpu : IParticleSystem
 {
     private readonly Instance[] _data;
 
@@ -36,20 +31,18 @@ public class ParticleSystemCpu : IParticleSystem
         _integrator;
 
     private readonly VkMappedMemory<Instance> _mapped;
-    private readonly VkAllocator _staggingAllocator;
     private bool _disposedValue;
 
-    public ParticleSystemCpu(VkAllocator staggingAllocator,
+    public ParticleSystemCpu(VkAllocator stagingAllocator,
         Instance[] initialData,
         SymplecticIntegrator<double, Vector<double>> integrator)
     {
         _data = new Instance[initialData.Length];
         Array.Copy(initialData, _data, initialData.Length);
         _integrator = integrator;
-        _staggingAllocator = staggingAllocator;
         Buffer = new VkBuffer<Instance>(_data.Length,
             BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive,
-            _staggingAllocator);
+            stagingAllocator);
         _mapped = Buffer.Map(0, _data.Length);
     }
 
@@ -61,16 +54,16 @@ public class ParticleSystemCpu : IParticleSystem
         for (var i = 0; i < _data.Length - 1; i++)
         {
             var pos = _data[i].position;
-            var tmpi = i;
+            var number = i;
             taskList.Add(Task.Run(() =>
             {
                 var (q, p) = _integrator.Step(
                     new Vector<double>([pos.X, totalTime]),
                     new Vector<double>([pos.Y, 0]), delta);
-                var newpos =
+                var newPosition =
                     new Vector2D<float>((float)q[0], (float)p[0]);
-                _data[tmpi].position = newpos;
-                _data[tmpi].offset = newpos - pos;
+                _data[number].position = newPosition;
+                _data[number].offset = newPosition - pos;
             }));
         }
 
@@ -82,20 +75,17 @@ public class ParticleSystemCpu : IParticleSystem
     public void Dispose()
     {
         Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
-        if (!_disposedValue)
+        if (_disposedValue) return;
+        if (disposing)
         {
-            if (disposing)
-            {
-                _mapped.Dispose();
-                Buffer.Dispose();
-            }
-
-            _disposedValue = true;
+            _mapped.Dispose();
+            Buffer.Dispose();
         }
+
+        _disposedValue = true;
     }
 }

@@ -1,7 +1,7 @@
 using System.Reflection;
 using Silk.NET.Vulkan;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public interface IUniformBufferStruct
 {
@@ -70,7 +70,7 @@ public class VkSetLayout : IDisposable
             foreach (var descriptor in typeof(T).GetProperties()
                          .Select(z =>
                              z.GetCustomAttribute<
-                                 UniformDescription>())
+                                 UniformDescriptionAttribute>())
                          .Where(z => z != null))
                 bindings.Add(new DescriptorSetLayoutBinding
                 {

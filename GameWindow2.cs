@@ -1,25 +1,25 @@
 using System.Runtime.InteropServices;
-using BoidsVulkan;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Windowing;
+using Sitnikov.BoidsVulkan;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct Instance : IVertexData<Instance>
 {
-    [VertexAttributeDescription(2, Format.R32G32Sfloat)]
+    [VertexInputDescription(2, Format.R32G32Sfloat)]
     public Vector2D<float> position;
 
-    [VertexAttributeDescription(4, Format.R32G32Sfloat)]
+    [VertexInputDescription(4, Format.R32G32Sfloat)]
     public Vector2D<float> offset;
 
-    [VertexAttributeDescription(3, Format.R32G32B32A32Sfloat)]
+    [VertexInputDescription(3, Format.R32G32B32A32Sfloat)]
     public Vector4D<float> color;
 }
 
-public partial class GameWindow
+public sealed partial class GameWindow
 {
     private static Instance[] _instances;
 
@@ -79,12 +79,10 @@ public partial class GameWindow
         },
     ];
 
-    private bool _firstrun = true;
+    private bool _firstRun = true;
     private uint _imageIndex;
-
-    private SymplecticIntegrator<double, Vector<double>> _integrator;
-
-    private double _totaltime;
+    
+    private double _totalTime;
 
     public void Run()
     {
@@ -126,7 +124,7 @@ public partial class GameWindow
 
             using (var renderRecording =
                    recording.BeginRenderPass(_renderPass,
-                       _framebuffers[0], scissor))
+                       _frameBuffers[0], scissor))
             {
                 var pushConstant2 = new PushConstant
                 {
@@ -224,7 +222,7 @@ public partial class GameWindow
                 _textureBuffer.Image.Image,
                 ImageLayout.TransferSrcOptimal,
                 _swapchain.Images[imageIndex].Image,
-                ImageLayout.TransferDstOptimal, 1, ref region);
+                ImageLayout.TransferDstOptimal, 1, in region);
 
             ImageMemoryBarrier barrier2 = new()
             {
@@ -252,17 +250,17 @@ public partial class GameWindow
 
         CreateSwapchain();
         CreateViews();
-        CreateFramebuffers();
+        CreateFrameBuffers();
 
         for (var i = 0; i < _views.Count; i++)
             RecordBuffer(_buffers[i], i);
     }
 
-    private async Task OnUpdate(double frametime)
+    private async Task OnUpdate(double frameTime)
     {
-        if (_firstrun)
+        if (_firstRun)
         {
-            _firstrun = false;
+            _firstRun = false;
             _copyBuffer.Reset(CommandBufferResetFlags.None);
             using (var recording =
                    _copyBuffer.Begin(CommandBufferUsageFlags
@@ -273,7 +271,7 @@ public partial class GameWindow
                     _particleSystem.Buffer.Size);
             }
 
-            _totaltime = 0;
+            _totalTime = 0;
             return;
         }
 
@@ -284,28 +282,28 @@ public partial class GameWindow
                 position = Vector2D<float>.Zero,
                 color = new Vector4D<float>(0, 0, 0,
                     1.0f - (float)Math.Exp(
-                        -_config.Visualization.Fade * frametime)),
+                        -_config.Visualization.Fade * frameTime)),
                 offset = new Vector2D<float>(0, 1),
             };
         }
 
-        _totalFrametime += frametime;
+        _totalFrameTime += frameTime;
         _fps++;
-        if (_totalFrametime >= 1)
+        if (_totalFrameTime >= 1)
         {
-            _window.Title = $"FPS: {_fps / _totalFrametime}";
-            _totalFrametime = 0;
+            _window.Title = $"FPS: {_fps / _totalFrameTime}";
+            _totalFrameTime = 0;
             _fps = 0;
         }
 
-        await _particleSystem.Update(frametime, _totaltime);
-        _totaltime += frametime;
+        await _particleSystem.Update(frameTime, _totalTime);
+        _totalTime += frameTime;
         _copyFence.Reset();
         _copyBuffer.Submit(_device.GraphicsQueue, _copyFence, [], []);
         await _copyFence.WaitFor();
     }
 
-    private void OnRender(double frametime)
+    private void OnRender(double frameTime)
     {
         _fences[_frameIndex].WaitFor().GetAwaiter().GetResult();
         if (_swapchain.AcquireNextImage(_device,

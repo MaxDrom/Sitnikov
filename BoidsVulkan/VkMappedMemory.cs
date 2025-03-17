@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using Silk.NET.Vulkan;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public unsafe class VkMappedMemory<T> : IDisposable
     where T : unmanaged

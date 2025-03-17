@@ -2,7 +2,7 @@ using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 using Buffer = Buffer;
 

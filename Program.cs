@@ -1,9 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using System.Globalization;
 using Silk.NET.Windowing;
+using Sitnikov.symplecticIntegrators;
 using YamlDotNet.Serialization;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov;
 
 public class SitnikovConfig
 {

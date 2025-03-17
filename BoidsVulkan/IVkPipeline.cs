@@ -1,6 +1,6 @@
 using Silk.NET.Vulkan;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public interface IVkPipeline
 {

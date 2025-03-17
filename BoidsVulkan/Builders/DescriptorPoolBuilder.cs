@@ -1,4 +1,4 @@
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan.Builders;
 
 public class DescriptorPoolBuilder
 {

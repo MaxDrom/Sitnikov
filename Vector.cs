@@ -1,7 +1,8 @@
 using System.Collections;
 using System.Numerics;
+using Sitnikov.interfaces;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov;
 
 public class Vector<TField> : ILinearSpace<Vector<TField>, TField>,
     IEnumerable<TField>

@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov.interfaces;
 
 public interface ILinearSpace<TSelf, TField> :
     IAdditionOperators<TSelf, TSelf, TSelf>,

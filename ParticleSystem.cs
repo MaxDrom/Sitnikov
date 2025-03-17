@@ -1,7 +1,7 @@
-using BoidsVulkan;
-using VkAllocatorSystem;
+using Sitnikov.BoidsVulkan;
+using Sitnikov.BoidsVulkan.VkAllocatorSystem;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov;
 
 public interface IParticleSystem : IDisposable
 {

@@ -1,9 +1,9 @@
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
-public class VkComputePipeline : IVkPipeline, IDisposable
+public sealed class VkComputePipeline : IVkPipeline, IDisposable
 {
     private readonly VkContext _ctx;
     private readonly VkDevice _device;
@@ -21,13 +21,13 @@ public class VkComputePipeline : IVkPipeline, IDisposable
         _device = device;
         _pipelineLayout = new VkPiplineLayout(ctx, device, setLayouts,
             pushConstantRanges);
-        var pname = SilkMarshal.StringToPtr(computeShader.EntryPoint);
+        var pName = SilkMarshal.StringToPtr(computeShader.EntryPoint);
         var stageInfo = new PipelineShaderStageCreateInfo
         {
             SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.ComputeBit,
             Module = computeShader.ShaderModule.ShaderModule,
-            PName = (byte*)pname,
+            PName = (byte*)pName,
         };
 
         if (computeShader.SpecializationInfo != null)
@@ -43,8 +43,8 @@ public class VkComputePipeline : IVkPipeline, IDisposable
             Layout = _pipelineLayout.PipelineLayout,
         };
         _ctx.Api.CreateComputePipelines(_device.Device, default, 1u,
-            ref computeCreateInfo, null, out _pipeline);
-        SilkMarshal.Free(pname);
+            in computeCreateInfo, null, out _pipeline);
+        SilkMarshal.Free(pName);
     }
 
     public void Dispose()
@@ -60,7 +60,7 @@ public class VkComputePipeline : IVkPipeline, IDisposable
     public PipelineLayout PipelineLayout =>
         _pipelineLayout.PipelineLayout;
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposedValue)
         {

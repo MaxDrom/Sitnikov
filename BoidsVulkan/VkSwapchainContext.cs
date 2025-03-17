@@ -2,7 +2,7 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public unsafe class VkSwapchainContext : IDisposable
 {
@@ -71,15 +71,15 @@ public unsafe class VkSwapchainContext : IDisposable
     }
 
     public void QueuePresent(Queue queue,
-        IEnumerable<uint> imageIndexes,
-        IEnumerable<VkSwapchain> swapchains,
-        IEnumerable<VkSemaphore> semaphores)
+        uint[] imageIndexes,
+        VkSwapchain[] swapchains,
+        VkSemaphore[] semaphores)
     {
-        var swapchainCount = swapchains.Count();
+        var swapchainCount = swapchains.Length;
         var pswapchainbuf = stackalloc SwapchainKHR[swapchainCount];
-        var semaphoresCount = semaphores.Count();
+        var semaphoresCount = semaphores.Length;
         var psemaphorebuf = stackalloc Semaphore[semaphoresCount];
-        var imagesCount = imageIndexes.Count();
+        var imagesCount = imageIndexes.Length;
         var pimagebuf = stackalloc uint[imagesCount];
         var tmp = pswapchainbuf;
         foreach (var swapchain in swapchains)
@@ -101,8 +101,7 @@ public unsafe class VkSwapchainContext : IDisposable
             tmp3[0] = image;
             tmp3++;
         }
-
-        // var imageIndex = 0u;
+        
         var presentInfo = new PresentInfoKHR
         {
             SType = StructureType.PresentInfoKhr,
@@ -112,6 +111,6 @@ public unsafe class VkSwapchainContext : IDisposable
             PWaitSemaphores = psemaphorebuf,
             PImageIndices = pimagebuf,
         };
-        _swapchainApi.QueuePresent(queue, ref presentInfo);
+        _swapchainApi.QueuePresent(queue, in presentInfo);
     }
 }

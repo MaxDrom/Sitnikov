@@ -1,25 +1,19 @@
 using Silk.NET.Vulkan;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
-public class UniformDescription : Attribute
+public class UniformDescriptionAttribute(int binding,
+    ShaderStageFlags shaderStageFlags,
+    DescriptorType descriptorType,
+    int descriptorCount
+)
+    : Attribute
 {
-    public UniformDescription(int binding,
-        ShaderStageFlags shaderStageFlags,
-        DescriptorType descriptorType,
-        int descriptorCount)
-    {
-        Binding = binding;
-        ShaderStageFlags = shaderStageFlags;
-        DescriptorType = descriptorType;
-        DescriptorCount = descriptorCount;
-    }
+    public int Binding { get; set; } = binding;
 
-    public int Binding { get; set; }
+    public int DescriptorCount { get; set; } = descriptorCount;
 
-    public int DescriptorCount { get; set; }
+    public ShaderStageFlags ShaderStageFlags { get; set; } = shaderStageFlags;
 
-    public ShaderStageFlags ShaderStageFlags { get; set; }
-
-    public DescriptorType DescriptorType { get; set; }
+    public DescriptorType DescriptorType { get; set; } = descriptorType;
 }

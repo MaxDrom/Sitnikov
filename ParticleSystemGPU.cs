@@ -1,11 +1,12 @@
 using System.Runtime.InteropServices;
-using BoidsVulkan;
 using Silk.NET.Vulkan;
+using Sitnikov.BoidsVulkan;
+using Sitnikov.BoidsVulkan.VkAllocatorSystem;
+using Sitnikov.symplecticIntegrators;
 using SixLabors.ImageSharp.PixelFormats;
-using VkAllocatorSystem;
 using Image = SixLabors.ImageSharp.Image;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 internal struct UpdateData
@@ -63,8 +64,10 @@ public class ParticleSystemGpuFactory : IParticleSystemFactory
     }
 }
 
-public sealed class ParticleSystemGpu : IParticleSystem
+public class ParticleSystemGpu : IParticleSystem
 {
+    public VkBuffer<Instance> Buffer { get; }
+
     private readonly VkAllocator _allocator;
     private readonly VkCommandBuffer _cmdBuffer;
     private readonly VkCommandBuffer _cmdBufferCopy;
@@ -78,7 +81,7 @@ public sealed class ParticleSystemGpu : IParticleSystem
     private readonly VkFence _fence;
     private readonly VkBuffer<float> _integratorBuffer;
     private readonly int _n;
-    private readonly VkAllocator _staggingAllocator;
+    private readonly VkAllocator _stagingAllocator;
     private bool _disposedValue;
     private VkTexture _eccentricityTexture;
 
@@ -86,7 +89,7 @@ public sealed class ParticleSystemGpu : IParticleSystem
         VkDevice device,
         VkCommandPool commandPool,
         VkAllocator allocator,
-        VkAllocator staggingAllocator,
+        VkAllocator stagingAllocator,
         double e,
         Instance[] initials,
         float[] timeSteps)
@@ -94,7 +97,7 @@ public sealed class ParticleSystemGpu : IParticleSystem
         _ctx = ctx;
         _device = device;
         _allocator = allocator;
-        _staggingAllocator = staggingAllocator;
+        _stagingAllocator = stagingAllocator;
         _fence = new VkFence(_ctx, _device);
         _e = e;
         _n = initials.Length;
@@ -110,22 +113,22 @@ public sealed class ParticleSystemGpu : IParticleSystem
             BufferUsageFlags.TransferDstBit |
             BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive,
             _allocator);
-        using var staggingBufferIntegrator = new VkBuffer<float>(
+        using var stagingBufferIntegrator = new VkBuffer<float>(
             timeSteps.Length, BufferUsageFlags.TransferSrcBit,
             SharingMode.Exclusive, _allocator);
 
         using (var mapped =
-               staggingBufferIntegrator.Map(0, timeSteps.Length))
+               stagingBufferIntegrator.Map(0, timeSteps.Length))
         {
             for (var i = 0; i < timeSteps.Length; i++)
                 mapped[i] = timeSteps[i];
         }
 
-        using var staggingBuffer = new VkBuffer<Instance>(_n,
+        using var stagingBuffer = new VkBuffer<Instance>(_n,
             BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive,
             _allocator);
 
-        using (var mapped = staggingBuffer.Map(0, _n))
+        using (var mapped = stagingBuffer.Map(0, _n))
         {
             for (var i = 0; i < _n; i++) mapped[i] = initials[i];
         }
@@ -184,11 +187,11 @@ public sealed class ParticleSystemGpu : IParticleSystem
                _cmdBufferCopy.Begin(CommandBufferUsageFlags
                    .OneTimeSubmitBit))
         {
-            recording.CopyBuffer(staggingBuffer, Buffer, 0, 0,
-                staggingBuffer.Size);
-            recording.CopyBuffer(staggingBufferIntegrator,
+            recording.CopyBuffer(stagingBuffer, Buffer, 0, 0,
+                stagingBuffer.Size);
+            recording.CopyBuffer(stagingBufferIntegrator,
                 _integratorBuffer, 0, 0,
-                staggingBufferIntegrator.Size);
+                stagingBufferIntegrator.Size);
         }
 
         _cmdBufferCopy.Submit(device.TransferQueue,
@@ -221,8 +224,6 @@ public sealed class ParticleSystemGpu : IParticleSystem
                 DescriptorType.StorageBuffer,
                 [bufferInfo1, bufferInfo2]).Update();
     }
-
-    public VkBuffer<Instance> Buffer { get; }
 
     public void Dispose()
     {
@@ -291,12 +292,12 @@ public sealed class ParticleSystemGpu : IParticleSystem
         Span<RgbaVector> span =
             new(new RgbaVector[image.Height * image.Width]);
         image.CopyPixelDataTo(span);
-        var staggingBuffer = new VkBuffer<float>(
+        var stagingBuffer = new VkBuffer<float>(
             image.Height * image.Width,
             BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive,
-            _staggingAllocator);
+            _stagingAllocator);
         using (var mapped =
-               staggingBuffer.Map(0, image.Width * image.Height))
+               stagingBuffer.Map(0, image.Width * image.Height))
         {
             for (var i = 0; i < image.Height * image.Width; i++)
                 mapped[i] = span[i].R;
@@ -342,7 +343,7 @@ public sealed class ParticleSystemGpu : IParticleSystem
                 imageMemoryBarriers: [barrier]);
 
             _ctx.Api.CmdCopyBufferToImage(_cmdBufferCopy.Buffer,
-                staggingBuffer.Buffer,
+                stagingBuffer.Buffer,
                 _eccentricityTexture.Image.Image,
                 ImageLayout.TransferDstOptimal, 1, in region);
         }

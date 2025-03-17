@@ -1,9 +1,9 @@
 using System.Runtime.InteropServices;
 using Silk.NET.Vulkan;
-using VkAllocatorSystem;
+using Sitnikov.BoidsVulkan.VkAllocatorSystem;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 using Buffer = Buffer;
 

@@ -1,7 +1,6 @@
-using BoidsVulkan;
 using Silk.NET.Vulkan;
 
-namespace VkAllocatorSystem;
+namespace Sitnikov.BoidsVulkan.VkAllocatorSystem;
 
 public class StupidAllocatorFactory : IVkAllocatorFactory
 {

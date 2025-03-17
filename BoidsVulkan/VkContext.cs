@@ -5,11 +5,11 @@ using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Silk.NET.Windowing;
 
-namespace BoidsVulkan;
+namespace Sitnikov.BoidsVulkan;
 
 public class VkContext : IDisposable
 {
-    private readonly Instance _instance;
+    private readonly Silk.NET.Vulkan.Instance _instance;
     private readonly KhrSurface _surfaceApi;
     private bool _disposedValue;
 
@@ -135,7 +135,7 @@ public class VkContext : IDisposable
 
     public KhrSurface SurfaceApi => _surfaceApi;
 
-    public Instance Instance => _instance;
+    public Silk.NET.Vulkan.Instance Instance => _instance;
 
     public SurfaceKHR Surface { get; }
 

@@ -1,6 +1,7 @@
 using System.Numerics;
+using Sitnikov.interfaces;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov.symplecticIntegrators;
 
 public class
     Leapfrog<TField, TSpace> : SymplecticIntegrator<TField, TSpace>
