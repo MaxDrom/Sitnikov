@@ -14,13 +14,15 @@ public static class MyMath
         for (var i = 1; i <= k; i++) kf++;
 
         TField rl;
+        var steps = 0;
         do
         {
             rl = result;
             result = ((kf - TField.One) * result +
                       x / Pow(result, k - 1)) / kf;
+            steps++;
         } while (TField.CreateTruncating(TField.Abs(result - rl)) !=
-                 TField.Zero);
+                 TField.Zero && steps<100);
 
         return result;
     }

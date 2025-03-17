@@ -32,23 +32,25 @@ public class
                  (Two - MyMath.Root(Two, 2 * order + 1));
         var x0 = TField.One - Two * x1;
 
-        var fieldOrder = (dynamic)order;
+        TField fieldOrder = (dynamic)order;
 
-        for (var i = 0; i < 100; i++)
+        for (var i = 0; i < 1000; i++)
         {
+            var x1powerOrder = MyMath.Pow(x1, 2 * order);
+            var x0powerOrder = MyMath.Pow(x0, 2 * order);
             var w11 = TField.One;
             var w12 = Two;
-            var w21 = Two * MyMath.Pow(x1, 2 * order) *
+            var w21 = Two *x1powerOrder *
                       (Two * fieldOrder + TField.One);
-            var w22 = MyMath.Pow(x0, 2 * order) *
+            var w22 = x0powerOrder *
                       (Two * fieldOrder + TField.One);
             var det = w11 * w22 - w21 * w12;
             var y0 = Two * x1 + x0 - TField.One;
-            var y1 = Two * MyMath.Pow(x1, 2 * order + 1) +
-                     MyMath.Pow(x0, 2 * order + 1);
+            var y1 = Two * x1powerOrder*x1 +
+                     x0powerOrder*x0;
 
-            x0 = x0 - (w22 * y0 - w12 * y1) / det;
-            x1 = x1 - (-w21 * y0 + w11 * y1) / det;
+            x0 -= (w22 * y0 - w12 * y1) / det;
+            x1 -= (-w21 * y0 + w11 * y1) / det;
         }
 
         return (x0, x1);
