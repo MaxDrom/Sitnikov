@@ -49,7 +49,6 @@ public class Vector<TField> : ILinearSpace<Vector<TField>, TField>, IEnumerable<
         for (var i = 0; i < left.Length; i++)
             result[i] = left[i] + right[i];
 
-       
         return result;
     }
 
@@ -66,18 +65,17 @@ public class Vector<TField> : ILinearSpace<Vector<TField>, TField>, IEnumerable<
     public static TField operator *(Vector<TField> right, Vector<TField> left)
     {
         var result = TField.Zero;
-        if(left._isZero || right._isZero)
+        if (left._isZero || right._isZero)
             return TField.Zero;
 #if DEBUG
         if (left.Length != right.Length)
             throw new ArgumentException("Вектора должны иметь одинаковый размер");
 #endif
-        for(var i = 0; i<left.Length; i++)
-            result += right[i]*left[i];
+        for (var i = 0; i < left.Length; i++)
+            result += right[i] * left[i];
 
         return result;
     }
-
 
     public override string ToString()
     {

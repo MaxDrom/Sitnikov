@@ -124,14 +124,9 @@ public sealed class GraphicsPipelineBuilder
     {
         GraphicsPipelineBuilder _scope = scope;
 
-        public GraphicsPipelineBuilderFinal WithLayouts(VkSetLayout[] setLayouts)
+        public GraphicsPipelineBuilderFinal WithLayouts(VkSetLayout[] setLayouts, PushConstantRange[] pushConstantRanges)
         {
             _scope._setLayouts = setLayouts;
-            return new GraphicsPipelineBuilderFinal(_scope);
-        }
-
-        public GraphicsPipelineBuilderFinal WithPushConstants(PushConstantRange[] pushConstantRanges)
-        {
             _scope._pushConstantRanges = pushConstantRanges;
             return new GraphicsPipelineBuilderFinal(_scope);
         }
