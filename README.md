@@ -32,6 +32,7 @@ Integrator: ---# Integrator parameters (optional)
     Timestep: 0.01 ---# Integrator step
 
 Visualization: ---# Visualization parameters (optional)
+    OnGPU: true ---# Do update on gpu instead of cpu
     Fade: 3 ---# 
     RangeX: ---# The size of the visualization domain along coordinate
         Item1: -3

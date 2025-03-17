@@ -11,6 +11,7 @@ Integrator:
   Order: 6
   Timestep: 0.01
 Visualization:
+  OnGPU: true
   Fade: 3
   RangeX:
     Item1: -5

@@ -31,6 +31,7 @@ public class PoincareConfig
 
 public class VisualizationConfig
 {
+    public bool OnGPU {get; set;} = false;
     public double Fade { get; set; } = 5;
     public (double, double) RangeX { get; set; } = (-2.5, 2.5);
     public (double, double) RangeY { get; set; } = (-2.5, 2.5);
@@ -136,7 +137,11 @@ class Program
             return;
         }
 
-        IParticleSystemFactory factory = new ParticleSystemGPUFactory(e, config.Integrator.Order/2);//new ParticleSystemCPUFactory(yoshida6);
+        IParticleSystemFactory factory;
+        if(config.Visualization.OnGPU)
+            factory = new ParticleSystemGPUFactory(e, config.Integrator.Order/2);//new ParticleSystemCPUFactory(yoshida6);
+        else
+            factory = new ParticleSystemCPUFactory(yoshida6);
         using var gameWindow =
             new GameWindow(WindowOptions.DefaultVulkan, config, 
             factory);
