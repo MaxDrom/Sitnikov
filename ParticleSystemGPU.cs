@@ -25,12 +25,12 @@ public class ParticleSystemGpuFactory : IParticleSystemFactory
     public ParticleSystemGpuFactory(double e, int order)
     {
         _e = e;
-        var tracer = new Tracer<float>();
+        var tracer = new Tracer<double>();
         var integrator =
-            YoshidaIntegrator<float, Vector<float>>.BuildFromLeapfrog(
+            YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(
                 tracer.DV, tracer.DT, order);
-        var (q, p) = integrator.Step(new Vector<float>([0]),
-            new Vector<float>([0]), 1);
+        var (q, p) = integrator.Step(new Vector<double>([0]),
+            new Vector<double>([0]), 1);
 
         var steps = tracer.GetReducedSteps(q[0], p[0]);
         var current = 0;
@@ -43,7 +43,7 @@ public class ParticleSystemGpuFactory : IParticleSystemFactory
                 current++;
             }
 
-            result.Add(steps[i].Item1);
+            result.Add((float)steps[i].Item1);
             current++;
         }
 
@@ -356,20 +356,18 @@ public class ParticleSystemGpu : IParticleSystem
 
     private void Dispose(bool disposing)
     {
-        if (!_disposedValue)
+        if (_disposedValue) return;
+        if (disposing)
         {
-            if (disposing)
-            {
-                _fence.Dispose();
-                Buffer.Dispose();
-                _integratorBuffer.Dispose();
-                _descriptorPool.Dispose();
-                _eccentricityView.Dispose();
-                _eccentricityTexture.Dispose();
-                _computePipeline.Dispose();
-            }
-
-            _disposedValue = true;
+            _fence.Dispose();
+            Buffer.Dispose();
+            _integratorBuffer.Dispose();
+            _descriptorPool.Dispose();
+            _eccentricityView.Dispose();
+            _eccentricityTexture.Dispose();
+            _computePipeline.Dispose();
         }
+
+        _disposedValue = true;
     }
 }

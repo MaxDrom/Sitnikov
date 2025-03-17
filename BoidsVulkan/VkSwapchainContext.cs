@@ -6,16 +6,14 @@ namespace Sitnikov.BoidsVulkan;
 
 public unsafe class VkSwapchainContext : IDisposable
 {
-    private readonly VkContext _ctx;
     private readonly VkDevice _device;
     private readonly KhrSwapchain _swapchainApi;
     private bool _disposedValue;
 
     public VkSwapchainContext(VkContext ctx, VkDevice device)
     {
-        _ctx = ctx;
         _device = device;
-        _ctx.Api.TryGetDeviceExtension(_ctx.Instance, device.Device,
+        ctx.Api.TryGetDeviceExtension(ctx.Instance, device.Device,
             out _swapchainApi);
     }
 
@@ -32,7 +30,7 @@ public unsafe class VkSwapchainContext : IDisposable
         out SwapchainKHR swapchain)
     {
         if (_swapchainApi.CreateSwapchain(_device.Device,
-                ref createInfo, null, out swapchain) !=
+                out createInfo, null, out swapchain) !=
             Result.Success)
             throw new Exception("Failed to create swapchain!");
     }
