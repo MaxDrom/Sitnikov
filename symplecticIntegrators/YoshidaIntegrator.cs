@@ -102,13 +102,13 @@ class OptimizedYoshida<TField, TSpace>: SymplecticIntegrator<TField, TSpace>
     }
 }
 
-enum StepType
+public enum StepType
 {
     dV = 0,
     dT = 1
 }
 
-class Tracer<TField>
+public class Tracer<TField>
     where TField: IFloatingPoint<TField>
 {
     private List<(TField, TField, StepType)> _results = new List<(TField, TField, StepType)>();

@@ -2,7 +2,6 @@ using BoidsVulkan;
 using Silk.NET.Vulkan;
 
 namespace VkAllocatorSystem;
-using Buffer = Silk.NET.Vulkan.Buffer;
 
 public class AllocationNode(DeviceMemory deviceMemory, ulong offset)
 {
@@ -11,19 +10,33 @@ public class AllocationNode(DeviceMemory deviceMemory, ulong offset)
     internal AllocationNode Next {get; set;}
 }
 
-public class AllocationPool
+public interface IVkAllocatorFactory
 {
-
+    IVkAllocator Create(VkContext ctx, VkDevice device, MemoryPropertyFlags requiredProperties, MemoryHeapFlags preferredFlags);
 }
+
 public abstract class IVkAllocator : IDisposable
 {
     private bool disposedValue;
 
-    public abstract VkContext Ctx {get;}
-    public abstract VkDevice Device {get;}
+    protected MemoryPropertyFlags requiredProperties;
+    protected MemoryHeapFlags preferredFlags;
+    private VkContext _ctx;
+    private VkDevice _device;
+
+    public VkContext Ctx => _ctx;
+    public VkDevice Device => _device;
     public abstract AllocationNode Allocate(MemoryRequirements requirements);
     public abstract void Deallocate(AllocationNode node);
     public abstract void Free();
+
+    public IVkAllocator(VkContext ctx, VkDevice device, MemoryPropertyFlags requiredProperties, MemoryHeapFlags preferredFlags)
+    {
+        _ctx = ctx;
+        _device = device;
+        this.requiredProperties = requiredProperties;
+        this.preferredFlags = preferredFlags;
+    }
 
     protected virtual void Dispose(bool disposing)
     {

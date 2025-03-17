@@ -3,7 +3,6 @@ using System.Numerics;
 namespace SymplecticIntegrators;
 public static class MyMath
 {
-
     public static int Factorial(int k)
     {
         var result = 1;
@@ -27,8 +26,7 @@ public static class MyMath
         {
             rl = result;
             result = ((kf - TField.One) * result + x / Pow(result, k - 1)) / kf;
-        }
-        while (TField.CreateTruncating(TField.Abs(result - rl)) != TField.Zero);
+        } while (TField.CreateTruncating(TField.Abs(result - rl)) != TField.Zero);
         return result;
     }
 
@@ -46,24 +44,24 @@ public static class MyMath
     public static TField Sin<TField>(TField x)
         where TField : IFloatingPoint<TField>
     {
-        var two = TField.One+ TField.One;
-        if(TField.Abs(x)>= TField.One)
+        var two = TField.One + TField.One;
+        if (TField.Abs(x) >= TField.One)
         {
-            var s = Sin(x/two);
-            return two*s*Root(TField.One-s*s, 2);
+            var s = Sin(x / two);
+            return two * s * Root(TField.One - s * s, 2);
         }
 
         var order = TField.One;
         var stepval = x;
         var res = TField.Zero;
-        var xx = x*x;
-        while(TField.CreateTruncating(TField.Abs(stepval)) != TField.Zero)
+        var xx = x * x;
+        while (TField.CreateTruncating(TField.Abs(stepval)) != TField.Zero)
         {
-            res+=stepval;
+            res += stepval;
             order++;
-            stepval *= xx/order;
+            stepval *= xx / order;
             order++;
-            stepval *=-TField.One/order;
+            stepval *= -TField.One / order;
         }
         return res;
     }

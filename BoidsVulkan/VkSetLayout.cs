@@ -27,6 +27,24 @@ public class VkSetLayout : IDisposable
         }
     }
 
+    public unsafe VkSetLayout(VkContext ctx, VkDevice device, DescriptorSetLayoutBinding[] bindings)
+    {
+        _ctx = ctx;
+        _device = device;
+        fixed (DescriptorSetLayoutBinding* pbindings = bindings)
+        {
+            DescriptorSetLayoutCreateInfo info = new()
+            {
+                SType = StructureType.DescriptorSetLayoutCreateInfo,
+                Flags = DescriptorSetLayoutCreateFlags.None,
+                PBindings = pbindings,
+                BindingCount = (uint)bindings.Length
+            };
+            if (_ctx.Api.CreateDescriptorSetLayout(_device.Device, ref info, null, out _setLayout) != Result.Success)
+                throw new Exception("Failed to create descriptor set layout");
+        }
+    }
+
     public static VkSetLayout CreateForStructure<T>(VkContext ctx, VkDevice device)
         where T : struct
     {

@@ -4,6 +4,7 @@ namespace BoidsVulkan;
 
 public class VkCommandPool : IDisposable
 {
+
     private List<VkCommandBuffer> _allocatedBuffers = new List<VkCommandBuffer>();
     public CommandPool CmdPool => _cmdPool;
     private readonly VkContext _ctx;

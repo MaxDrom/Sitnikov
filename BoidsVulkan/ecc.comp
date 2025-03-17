@@ -1,0 +1,19 @@
+#version 450
+layout(local_size_x=32, local_size_y=32, local_size_z = 1) in;
+layout(binding = 0, r32f) uniform writeonly image2D inputImage;
+layout(push_constant) uniform PushConstants {
+    int N;
+}push;
+#define M_PI 3.1415926535897932384626433832795
+void main() {
+    uvec2 id = gl_GlobalInvocationID.xy;
+    vec2 uv = id/float(push.N-1);
+    float e = uv.x;
+    float M = uv.y*2*M_PI;
+    float E = M;
+
+    for(int i = 0; i< 100; i++) {
+        E = M+e*sin(E);
+    }
+    imageStore(inputImage, ivec2(id), vec4(E, 0, 0, 0));
+}

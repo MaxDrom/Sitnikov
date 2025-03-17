@@ -5,7 +5,7 @@ namespace BoidsVulkan;
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-struct Vertex : IVertexData
+struct Vertex : IVertexData<Vertex>
 {
     [VertexAttributeDescription(0, Format.R32G32Sfloat)]
     public Vector2D<float> position;

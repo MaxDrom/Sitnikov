@@ -3,10 +3,10 @@ using Silk.NET.Vulkan;
 
 namespace BoidsVulkan;
 
-public sealed class GraphicsPipelineBuider
+public sealed class GraphicsPipelineBuilder
 {
-
-    private List<VkSetLayout> _setLayouts;
+    private PushConstantRange[] _pushConstantRanges = [];
+    private VkSetLayout[] _setLayouts = [];
     private Dictionary<ShaderStageFlags, VkShaderInfo> _shaderInfos = new();
     private bool _logicOpEnable;
     private PipelineColorBlendAttachmentState[] _colorBlends;
@@ -29,9 +29,9 @@ public sealed class GraphicsPipelineBuider
     private PipelineDepthStencilStateCreateInfo _pipelineDepthStencilSettings;
 
 
-    public class GraphicsPipelineBuilderOptional(GraphicsPipelineBuider scope)
+    public class GraphicsPipelineBuilderOptional(GraphicsPipelineBuilder scope)
     {
-        GraphicsPipelineBuider _scope = scope;
+        GraphicsPipelineBuilder _scope = scope;
         public GraphicsPipelineBuilderOptional WithDynamicStages(List<DynamicState> dynamicStates)
         {
             _scope._dynamicStates = dynamicStates;
@@ -44,12 +44,12 @@ public sealed class GraphicsPipelineBuider
             return this;
         }
 
-        public GraphicsPipelineBuiderInputAssembly WithVertexInput(Action<AttributeAggregator> f)
+        public GraphicsPipelineBuilderInputAssembly WithVertexInput(Action<AttributeAggregator> f)
         {
             _scope._vertexInputBindingDescriptions = [];
             _scope._vertexInputAttributeDescriptions = [];
             f(new AttributeAggregator(_scope));
-            return new GraphicsPipelineBuiderInputAssembly(_scope);
+            return new GraphicsPipelineBuilderInputAssembly(_scope);
         }
     }
 
@@ -64,12 +64,12 @@ public sealed class GraphicsPipelineBuider
     }
 
 
-    public class AttributeAggregator(GraphicsPipelineBuider scope)
+    public class AttributeAggregator(GraphicsPipelineBuilder scope)
     {
-        GraphicsPipelineBuider _scope = scope;
+        GraphicsPipelineBuilder _scope = scope;
 
         public AttributeAggregator AddBindingFor<T>(int binding, VertexInputRate inputRate)
-            where T : unmanaged, IVertexData
+            where T : unmanaged, IVertexData<T>
         {
             var (attributeDescr, bindingDescr) = default(T).CreateVertexInputDescription(binding, inputRate);
             _scope._vertexInputBindingDescriptions.Add(bindingDescr);
@@ -78,11 +78,11 @@ public sealed class GraphicsPipelineBuider
         }
     }
 
-    public class GraphicsPipelineBuiderInputAssembly(GraphicsPipelineBuider scope)
+    public class GraphicsPipelineBuilderInputAssembly(GraphicsPipelineBuilder scope)
     {
-        GraphicsPipelineBuider _scope = scope;
+        GraphicsPipelineBuilder _scope = scope;
 
-        public GraphicsPipelineBuiderViewport WithInputAssembly(PrimitiveTopology topology, bool primitiveRestartEnable = false)
+        public GraphicsPipelineBuilderViewport WithInputAssembly(PrimitiveTopology topology, bool primitiveRestartEnable = false)
         {
 
             var inputAssemblyState = new PipelineInputAssemblyStateCreateInfo()
@@ -92,48 +92,49 @@ public sealed class GraphicsPipelineBuider
                 PrimitiveRestartEnable = primitiveRestartEnable
             };
             _scope._inputAssemblyState = inputAssemblyState;
-            return new GraphicsPipelineBuiderViewport(_scope);
+            return new GraphicsPipelineBuilderViewport(_scope);
         }
     }
 
-    public class GraphicsPipelineBuiderViewport(GraphicsPipelineBuider scope)
+    public class GraphicsPipelineBuilderViewport(GraphicsPipelineBuilder scope)
     {
-        GraphicsPipelineBuider _scope = scope;
+        GraphicsPipelineBuilder _scope = scope;
 
-        public GraphicsPipelineBuiderStages WithViewportAndScissor(Viewport viewport, Rect2D scissor)
+        public GraphicsPipelineBuilderStages WithViewportAndScissor(Viewport viewport, Rect2D scissor)
         {
             _scope._viewport = viewport;
             _scope._scissor = scissor;
-            return new GraphicsPipelineBuiderStages(_scope);
+            return new GraphicsPipelineBuilderStages(_scope);
         }
     }
 
-    public class GraphicsPipelineBuiderStages(GraphicsPipelineBuider scope)
+    public class GraphicsPipelineBuilderStages(GraphicsPipelineBuilder scope)
     {
-        GraphicsPipelineBuider _scope = scope;
+        GraphicsPipelineBuilder _scope = scope;
 
-        public GraphicsPipelineBuiderLayout WithPipelineStages(Action<StageBuilder> f)
+        public GraphicsPipelineBuilderLayout WithPipelineStages(Action<StageBuilder> f)
         {
             var aggregator = new StageBuilder(_scope);
             f(aggregator);
-            return new GraphicsPipelineBuiderLayout(_scope);
+            return new GraphicsPipelineBuilderLayout(_scope);
         }
     }
 
-    public class GraphicsPipelineBuiderLayout(GraphicsPipelineBuider scope)
+    public class GraphicsPipelineBuilderLayout(GraphicsPipelineBuilder scope)
     {
-        GraphicsPipelineBuider _scope = scope;
+        GraphicsPipelineBuilder _scope = scope;
 
-        public GraphicsPipelineBuiderFinal WithLayout(IEnumerable<VkSetLayout> setLayouts)
+        public GraphicsPipelineBuilderFinal WithLayouts(VkSetLayout[] setLayouts, PushConstantRange[] pushConstantRanges)
         {
-            _scope._setLayouts = [.. setLayouts];
-            return new GraphicsPipelineBuiderFinal(_scope);
+            _scope._setLayouts = setLayouts;
+            _scope._pushConstantRanges = pushConstantRanges;
+            return new GraphicsPipelineBuilderFinal(_scope);
         }
     }
 
-    public class FixedFunctionBuilder(GraphicsPipelineBuider scope)
+    public class FixedFunctionBuilder(GraphicsPipelineBuilder scope)
     {
-        GraphicsPipelineBuider _scope = scope;
+        GraphicsPipelineBuilder _scope = scope;
 
         public FixedFunctionBuilder Rasterization(Func<RasterizationBuilder, RasterizationBuilder> f)
         {
@@ -183,15 +184,15 @@ public sealed class GraphicsPipelineBuider
         }
     }
 
-    public class GraphicsPipelineBuiderFinal(GraphicsPipelineBuider scope)
+    public class GraphicsPipelineBuilderFinal(GraphicsPipelineBuilder scope)
     {
-        private GraphicsPipelineBuider _scope = scope;
+        private GraphicsPipelineBuilder _scope = scope;
 
         public unsafe VkGraphicsPipeline Build(VkContext ctx, VkDevice device,
                                         int subpassIndex)
         {
             using var vertexInputStateCreateInfo = new VkVertexInputStateCreateInfo(_scope._vertexInputBindingDescriptions, _scope._vertexInputAttributeDescriptions);
-            using var pipelineLayout = new VkPiplineLayout(ctx, device, _scope._setLayouts);
+            
 
             uint sampleMask = 0;
             if (_scope._sampleMask != null)
@@ -224,7 +225,8 @@ public sealed class GraphicsPipelineBuider
                         ctx,
                         device,
                         _scope._shaderInfos,
-                        pipelineLayout,
+                        _scope._setLayouts,
+                        _scope._pushConstantRanges,
                         _scope._renderPass,
                         subpassIndex,
                         _scope._dynamicStates,
@@ -247,9 +249,9 @@ public sealed class GraphicsPipelineBuider
 
     public class StageBuilder
     {
-        private GraphicsPipelineBuider _scope;
+        private GraphicsPipelineBuilder _scope;
 
-        internal StageBuilder(GraphicsPipelineBuider scope)
+        internal StageBuilder(GraphicsPipelineBuilder scope)
         {
             _scope = scope;
         }
@@ -279,9 +281,9 @@ public sealed class GraphicsPipelineBuider
         }
     }
 
-    public class RasterizationBuilder(GraphicsPipelineBuider scope)
+    public class RasterizationBuilder(GraphicsPipelineBuilder scope)
     {
-        private GraphicsPipelineBuider _scope = scope;
+        private GraphicsPipelineBuilder _scope = scope;
 
         public RasterizationBuilder WithRasterizerDiscard()
         {

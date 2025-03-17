@@ -9,14 +9,18 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
 
     public PipelineBindPoint BindPoint => PipelineBindPoint.Graphics;
 
+    public PipelineLayout PipelineLayout => _pipelineLayout.PipelineLayout;
+
     private readonly VkContext _ctx;
     private readonly VkDevice _device;
     private readonly Pipeline _pipline;
+    private VkPiplineLayout _pipelineLayout;
     private bool disposedValue;
 
     public unsafe VkGraphicsPipeline(VkContext ctx, VkDevice device,
         Dictionary<ShaderStageFlags, VkShaderInfo> stageInfos,
-        VkPiplineLayout piplineLayout,
+        VkSetLayout[] setLayouts,
+        PushConstantRange[] pushConstantRanges,
         VkRenderPass renderPass,
         int subpassIndex,
         IEnumerable<DynamicState> dynamicStates,
@@ -32,7 +36,7 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
     {
         _ctx = ctx;
         _device = device;
-
+        _pipelineLayout = new VkPiplineLayout(ctx, device, setLayouts, pushConstantRanges);
         unsafe
         {
             var tmp = new List<PipelineShaderStageCreateInfo>();
@@ -92,7 +96,7 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
                         PDynamicState = &dynamicStateCreateInfo,
                         RenderPass = renderPass.RenderPass,
                         Subpass = (uint)subpassIndex,
-                        Layout = piplineLayout.PipelineLayout,
+                        Layout = _pipelineLayout.PipelineLayout,
                         PInputAssemblyState = &inputAssemblyState,
                         PViewportState = &viewportInfo
                     };
@@ -111,6 +115,8 @@ public class VkGraphicsPipeline : IDisposable, IVkPipeline
     {
         if (!disposedValue)
         {
+            if(disposing)
+                _pipelineLayout.Dispose();
             unsafe
             {
                 _ctx.Api.DestroyPipeline(_device.Device, _pipline, null);

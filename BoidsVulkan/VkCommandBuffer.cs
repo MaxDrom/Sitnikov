@@ -107,7 +107,8 @@ public class VkCommandBuffer
             return new VkCommandRecordingRenderObject(_ctx, _buffer, renderPass, framebuffer);
         }
 
-        public void CopyBuffer(VkBuffer src, VkBuffer dst, ulong srcOffset, ulong dstOffset, ulong size)
+        public void CopyBuffer<T>(VkBuffer<T> src, VkBuffer<T> dst, ulong srcOffset, ulong dstOffset, ulong size)
+            where T: unmanaged
         {
             var region = new BufferCopy()
             {
@@ -166,9 +167,20 @@ public class VkCommandBuffer
             }
         }
 
-        public void BindIndexBuffer(VkBuffer buffer, ulong offset, IndexType indexType)
+        public void BindIndexBuffer(VkBuffer<uint> buffer, ulong offset, IndexType indexType)
+            
         {
             _ctx.Api.CmdBindIndexBuffer(_buffer.InternalBuffer, buffer.Buffer, offset, indexType);
+        }
+
+        public void BindDescriptorSets(PipelineBindPoint bindPoint, PipelineLayout piplineLayout, DescriptorSet[] sets, uint[] dynamicOffsets = null, uint firstSet = 0)
+        {
+            _ctx.Api.CmdBindDescriptorSets(_buffer.InternalBuffer, bindPoint,
+                piplineLayout, 
+                0,
+                new ReadOnlySpan<DescriptorSet>(sets),
+                new ReadOnlySpan<uint>(dynamicOffsets)
+                );
         }
         public void Dispose()
         {

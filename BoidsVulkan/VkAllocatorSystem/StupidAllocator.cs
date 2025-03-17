@@ -3,23 +3,24 @@ using Silk.NET.Vulkan;
 
 namespace VkAllocatorSystem;
 
+public class StupidAllocatorFactory : IVkAllocatorFactory
+{
+    public IVkAllocator Create(VkContext ctx, VkDevice device, MemoryPropertyFlags requiredProperties, MemoryHeapFlags preferredFlags)
+    {
+        return new StupidAllocator(ctx, device, requiredProperties, preferredFlags);
+    }
+}
+
 public class StupidAllocator : IVkAllocator
 {
-
-    public override VkContext Ctx => _ctx;
-    public override VkDevice Device => _device;
-
-    private VkContext _ctx;
-    private VkDevice _device;
     private HashSet<AllocationNode> _allocatedNodes = [];
     private PhysicalDeviceMemoryProperties _memoryProperties;
     private List<int> _memoryTypesIndices;
     private RWLock _rwlock = new();
 
     public StupidAllocator(VkContext ctx, VkDevice device, MemoryPropertyFlags requiredProperties, MemoryHeapFlags preferredFlags)
+        : base(ctx, device, requiredProperties, preferredFlags)
     {
-        _ctx = ctx;
-        _device = device;
         Ctx.Api.GetPhysicalDeviceMemoryProperties(Device.PhysicalDevice, out _memoryProperties);
         Dictionary<int, int> memoryTypesScores = [];
         for (var i = 0; i < _memoryProperties.MemoryTypeCount; i++)
@@ -34,7 +35,6 @@ public class StupidAllocator : IVkAllocator
         }
 
         _memoryTypesIndices = [.. memoryTypesScores.OrderByDescending(z => z.Value).Select(z => z.Key)];
-
     }
 
     static int NumberOfSetBits(int i)
@@ -62,7 +62,7 @@ public class StupidAllocator : IVkAllocator
                 MemoryTypeIndex = (uint)i
             };
 
-            if (_ctx.Api.AllocateMemory(_device.Device, ref allocateInfo, null, out deviceMemory) == Result.Success)
+            if (Ctx.Api.AllocateMemory(Device.Device, ref allocateInfo, null, out deviceMemory) == Result.Success)
             {
                 success = true;
                 break;
@@ -86,7 +86,7 @@ public class StupidAllocator : IVkAllocator
         if (!_allocatedNodes.Contains(node))
             throw new Exception("Trying deallocate not allocated memory!");
         _allocatedNodes.Remove(node);
-        _ctx.Api.FreeMemory(_device.Device, node.Memory, null);
+        Ctx.Api.FreeMemory(Device.Device, node.Memory, null);
     }
 
     public override void Free()

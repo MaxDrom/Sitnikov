@@ -4,9 +4,15 @@ using VkAllocatorSystem;
 
 namespace BoidsVulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
-public class VkBuffer : IDisposable
+public interface VkBuffer
 {
-    internal Buffer Buffer =>_buffer;
+    Buffer Buffer {get;}
+}
+
+public class VkBuffer<T> : VkBuffer, IDisposable
+    where T: unmanaged
+{
+    public Buffer Buffer =>_buffer;
     private VkContext _ctx;
     private VkDevice _device;
     public ulong Size { get; private set; }
@@ -17,18 +23,43 @@ public class VkBuffer : IDisposable
     private AllocationNode _node;
     private IVkAllocator _allocator;
 
-    public VkBuffer(ulong size, BufferUsageFlags usage, SharingMode sharingMode, IVkAllocator allocator)
+    public VkBuffer(int length, BufferUsageFlags usage, SharingMode sharingMode, IVkAllocator allocator)
     {
         _ctx = allocator.Ctx;
         _device = allocator.Device;
         _allocator = allocator;
-        Size = size;
+        Size = (ulong)length*(ulong)Marshal.SizeOf<T>();
         unsafe
         {
             BufferCreateInfo createInfo = new BufferCreateInfo()
             {
                 SType = StructureType.BufferCreateInfo,
-                Size = size,
+                Size = Size,
+                Usage = usage,
+                SharingMode = sharingMode
+            };
+
+            if (_ctx.Api.CreateBuffer(_device.Device, ref createInfo, null, out _buffer) != Result.Success)
+                throw new Exception("Failed to create buffer");
+
+            var memoryRequirements = _ctx.Api.GetBufferMemoryRequirements(_device.Device, _buffer);
+            _node = allocator.Allocate(memoryRequirements);
+            _ctx.Api.BindBufferMemory(_device.Device, _buffer, _node.Memory, _node.Offset);
+        }
+    }
+
+    public VkBuffer(ulong length, BufferUsageFlags usage, SharingMode sharingMode, IVkAllocator allocator)
+    {
+        _ctx = allocator.Ctx;
+        _device = allocator.Device;
+        _allocator = allocator;
+        Size = (ulong)length*(ulong)Marshal.SizeOf<T>();
+        unsafe
+        {
+            BufferCreateInfo createInfo = new BufferCreateInfo()
+            {
+                SType = StructureType.BufferCreateInfo,
+                Size = Size,
                 Usage = usage,
                 SharingMode = sharingMode
             };
@@ -43,8 +74,7 @@ public class VkBuffer : IDisposable
     }
 
 
-    public VkMappedMemory<T> Map<T>(int offset, int size)
-        where T : unmanaged
+    public VkMappedMemory<T> Map(int offset, int size)
     {
         ulong structSize = (ulong)Marshal.SizeOf<T>();
         if(structSize*(ulong)size + (ulong)offset*structSize > Size)
@@ -53,8 +83,7 @@ public class VkBuffer : IDisposable
                                     offset, size, MemoryMapFlags.None);
     }
 
-    public VkMappedMemory<T> Map<T>(ulong offset, ulong size)
-        where T : unmanaged
+    public VkMappedMemory<T> Map(ulong offset, ulong size)
     {
         ulong structSize = (ulong)Marshal.SizeOf<T>();
         if(structSize*size + offset*structSize > Size)
