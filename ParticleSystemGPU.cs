@@ -115,7 +115,7 @@ public class ParticleSystemGpu : IParticleSystem
             _allocator);
         using var stagingBufferIntegrator = new VkBuffer<float>(
             timeSteps.Length, BufferUsageFlags.TransferSrcBit,
-            SharingMode.Exclusive, _allocator);
+            SharingMode.Exclusive, _stagingAllocator);
 
         using (var mapped =
                stagingBufferIntegrator.Map(0, timeSteps.Length))
@@ -126,7 +126,7 @@ public class ParticleSystemGpu : IParticleSystem
 
         using var stagingBuffer = new VkBuffer<Instance>(_n,
             BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive,
-            _allocator);
+            _stagingAllocator);
 
         using (var mapped = stagingBuffer.Map(0, _n))
         {
