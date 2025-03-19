@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Autofac.Features.AttributeFilters;
 using Silk.NET.Vulkan;
 using Sitnikov.BoidsVulkan;
 using Sitnikov.BoidsVulkan.VkAllocatorSystem;
@@ -17,18 +18,73 @@ internal struct UpdateData
     public float T;
 }
 
-public class ParticleSystemGpuFactory : IParticleSystemFactory
+public class ParticleSystemGpu : IParticleSystem
 {
-    private readonly double _e;
-    private readonly float[] _steps;
-
-    public ParticleSystemGpuFactory(double e, int order)
+    public VkBuffer<Instance> Buffer { get; }
+    public IEnumerable<Instance> DataOnCpu
     {
-        _e = e;
+        get
+        {
+            _copyFence.Reset();
+            _cmdBufferCopy.Reset(CommandBufferResetFlags.None);
+            using (var recording = _cmdBufferCopy.Begin(CommandBufferUsageFlags.OneTimeSubmitBit))
+            {
+                recording.CopyBuffer(Buffer, _stagingBuffer, 0, 0, Buffer.Size);
+            }
+            
+            _cmdBufferCopy.Submit(_device.TransferQueue, _copyFence, [], []);
+            _copyFence.WaitFor().GetAwaiter().GetResult();
+
+            return _mapped;
+        }
+    }
+
+    private readonly VkAllocator _allocator;
+    private readonly VkCommandBuffer _cmdBuffer;
+    private readonly VkCommandBuffer _cmdBufferCopy;
+    private readonly VkComputePipeline _computePipeline;
+    private readonly VkContext _ctx;
+    private readonly VkDescriptorPool _descriptorPool;
+    private readonly DescriptorSet _descriptorSet;
+    private readonly VkDevice _device;
+    private readonly double _e;
+    private readonly VkImageView _eccentricityView;
+    private readonly VkFence _fence;
+    private readonly VkBuffer<float> _integratorBuffer;
+    private readonly int _n;
+    private readonly VkAllocator _stagingAllocator;
+    private bool _disposedValue;
+    private VkTexture _eccentricityTexture;
+    private VkMappedMemory<Instance> _mapped;
+    private readonly VkCommandPool _commandPool;
+    private readonly VkCommandPool _commandPoolTransfer;
+    private readonly VkBuffer<Instance> _stagingBuffer;
+    private readonly VkFence _copyFence;
+    public ParticleSystemGpu(VkContext ctx,
+        VkDevice device,
+        [MetadataFilter("Type", "DeviceLocal")]
+        VkAllocator allocator,
+        [MetadataFilter("Type", "HostVisible")]
+        VkAllocator stagingAllocator,
+        Instance[] initialData,
+        SymplecticFactory symplecticFactory,
+        SitnikovConfig config
+    )
+    {
+        _ctx = ctx;
+        _device = device;
+        _allocator = allocator;
+        _stagingAllocator = stagingAllocator;
+        _fence = new VkFence(_ctx, _device);
+        _copyFence = new VkFence(_ctx, _device);
+        //_dataOnCpu = new Instance[initialData.Length];
+        _e = config.e;
+        _n = initialData.Length;
+
         var tracer = new Tracer<double>();
         var integrator =
-            YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(
-                tracer.DV, tracer.DT, order);
+            symplecticFactory(
+                tracer.DV, tracer.DT);
         var (q, p) = integrator.Step(new Vector<double>([0]),
             new Vector<double>([0]), 1);
 
@@ -49,58 +105,7 @@ public class ParticleSystemGpuFactory : IParticleSystemFactory
 
         if (current % 2 != 0) result.Add(0);
 
-        _steps = result.ToArray();
-    }
-
-    public IParticleSystem Create(VkContext ctx,
-        VkDevice device,
-        VkCommandPool commandPool,
-        VkAllocator allocator,
-        VkAllocator staggingAllocator,
-        Instance[] initialData)
-    {
-        return new ParticleSystemGpu(ctx, device, commandPool,
-            allocator, staggingAllocator, _e, initialData, _steps);
-    }
-}
-
-public class ParticleSystemGpu : IParticleSystem
-{
-    public VkBuffer<Instance> Buffer { get; }
-
-    private readonly VkAllocator _allocator;
-    private readonly VkCommandBuffer _cmdBuffer;
-    private readonly VkCommandBuffer _cmdBufferCopy;
-    private readonly VkComputePipeline _computePipeline;
-    private readonly VkContext _ctx;
-    private readonly VkDescriptorPool _descriptorPool;
-    private readonly DescriptorSet _descriptorSet;
-    private readonly VkDevice _device;
-    private readonly double _e;
-    private readonly VkImageView _eccentricityView;
-    private readonly VkFence _fence;
-    private readonly VkBuffer<float> _integratorBuffer;
-    private readonly int _n;
-    private readonly VkAllocator _stagingAllocator;
-    private bool _disposedValue;
-    private VkTexture _eccentricityTexture;
-
-    public ParticleSystemGpu(VkContext ctx,
-        VkDevice device,
-        VkCommandPool commandPool,
-        VkAllocator allocator,
-        VkAllocator stagingAllocator,
-        double e,
-        Instance[] initials,
-        float[] timeSteps)
-    {
-        _ctx = ctx;
-        _device = device;
-        _allocator = allocator;
-        _stagingAllocator = stagingAllocator;
-        _fence = new VkFence(_ctx, _device);
-        _e = e;
-        _n = initials.Length;
+        var timeSteps = result.ToArray();
 
         Buffer = new VkBuffer<Instance>(_n,
             BufferUsageFlags.StorageBufferBit |
@@ -124,13 +129,13 @@ public class ParticleSystemGpu : IParticleSystem
                 mapped[i] = timeSteps[i];
         }
 
-        using var stagingBuffer = new VkBuffer<Instance>(_n,
-            BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive,
+        _stagingBuffer = new VkBuffer<Instance>(_n,
+            BufferUsageFlags.TransferSrcBit | BufferUsageFlags.TransferDstBit, SharingMode.Exclusive,
             _stagingAllocator);
 
-        using (var mapped = stagingBuffer.Map(0, _n))
+        using (var mapped = _stagingBuffer.Map(0, _n))
         {
-            for (var i = 0; i < _n; i++) mapped[i] = initials[i];
+            for (var i = 0; i < _n; i++) mapped[i] = initialData[i];
         }
 
         var subresourceRange = new ImageSubresourceRange
@@ -175,11 +180,19 @@ public class ParticleSystemGpu : IParticleSystem
         _computePipeline = new VkComputePipeline(ctx, device,
             new VkShaderInfo(shaderModule, "main"), [layout],
             [pushConstant]);
-        var buffers =
-            commandPool.AllocateBuffers(CommandBufferLevel.Primary,
-                2);
-        _cmdBuffer = buffers[0];
-        _cmdBufferCopy = buffers[1];
+
+        _commandPool = new VkCommandPool(_ctx, _device,
+            CommandPoolCreateFlags.ResetCommandBufferBit,
+            _device.ComputeFamilyIndex);
+        _commandPoolTransfer = new VkCommandPool(_ctx, _device,
+            CommandPoolCreateFlags.ResetCommandBufferBit,
+            _device.TransferFamilyIndex);
+        _cmdBuffer = _commandPool.AllocateBuffers(
+            CommandBufferLevel.Primary,
+            1)[0];
+        _cmdBufferCopy = _commandPoolTransfer.AllocateBuffers(
+            CommandBufferLevel.Primary,
+            1)[0];
 
         LoadTexture();
 
@@ -187,8 +200,8 @@ public class ParticleSystemGpu : IParticleSystem
                _cmdBufferCopy.Begin(CommandBufferUsageFlags
                    .OneTimeSubmitBit))
         {
-            recording.CopyBuffer(stagingBuffer, Buffer, 0, 0,
-                stagingBuffer.Size);
+            recording.CopyBuffer(_stagingBuffer, Buffer, 0, 0,
+                _stagingBuffer.Size);
             recording.CopyBuffer(stagingBufferIntegrator,
                 _integratorBuffer, 0, 0,
                 stagingBufferIntegrator.Size);
@@ -223,6 +236,8 @@ public class ParticleSystemGpu : IParticleSystem
             .AppendWrite(_descriptorSet, 1,
                 DescriptorType.StorageBuffer,
                 [bufferInfo1, bufferInfo2]).Update();
+
+        _mapped = _stagingBuffer.Map(0, initialData.Length);
     }
 
     public void Dispose()
@@ -254,7 +269,7 @@ public class ParticleSystemGpu : IParticleSystem
             recording.PipelineBarrier(PipelineStageFlags.TopOfPipeBit,
                 PipelineStageFlags.ComputeShaderBit, 0,
                 imageMemoryBarriers: [barrier]);
-            recording.BindPipline(_computePipeline);
+            recording.BindPipeline(_computePipeline);
             recording.BindDescriptorSets(PipelineBindPoint.Compute,
                 _computePipeline.PipelineLayout, [_descriptorSet]);
 
@@ -359,6 +374,10 @@ public class ParticleSystemGpu : IParticleSystem
         if (_disposedValue) return;
         if (disposing)
         {
+            _stagingBuffer.Dispose();
+            _commandPool.Dispose();
+            _commandPoolTransfer.Dispose();
+            _copyFence.Dispose();
             _fence.Dispose();
             Buffer.Dispose();
             _integratorBuffer.Dispose();

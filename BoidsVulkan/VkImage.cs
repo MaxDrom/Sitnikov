@@ -57,7 +57,7 @@ public class VkTexture : IDisposable
             Samples = samples,
             SharingMode = sharingMode,
         };
-        if (_ctx.Api.CreateImage(_device.Device, ref imageInfo, null,
+        if (_ctx.Api.CreateImage(_device.Device, in imageInfo, null,
                 out var imageUnmanaged) != Result.Success)
             throw new Exception("Failed to create texture");
 

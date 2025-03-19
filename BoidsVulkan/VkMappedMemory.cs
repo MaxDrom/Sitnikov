@@ -1,9 +1,10 @@
+using System.Collections;
 using System.Runtime.InteropServices;
 using Silk.NET.Vulkan;
 
 namespace Sitnikov.BoidsVulkan;
 
-public unsafe class VkMappedMemory<T> : IDisposable
+public sealed unsafe class VkMappedMemory<T> : IDisposable, IEnumerable<T>
     where T : unmanaged
 {
     private readonly VkContext _ctx;
@@ -12,27 +13,30 @@ public unsafe class VkMappedMemory<T> : IDisposable
     private readonly T* _memoryPointer;
 
     private bool _disposedValue;
-
+    public int Count()
+    {
+        return (int)Length;
+    }
     public VkMappedMemory(VkContext ctx,
         VkDevice device,
         DeviceMemory memoryToMap,
         int offset,
-        int size,
+        int length,
         MemoryMapFlags flags)
     {
         _ctx = ctx;
         _device = device;
         _memory = memoryToMap;
-        Length = (ulong)size;
+        Length = (ulong)length;
         var structSize = (ulong)Marshal.SizeOf<T>();
         var offsetInBytes = (ulong)offset * structSize;
-        var sizeInBytes = (ulong)size * structSize;
+        var sizeInBytes = (ulong)length * structSize;
         void* tmp;
         _ctx.Api.MapMemory(_device.Device, _memory, offsetInBytes,
             sizeInBytes, flags, &tmp);
         _memoryPointer = (T*)tmp;
     }
-
+    
     public VkMappedMemory(VkContext ctx,
         VkDevice device,
         DeviceMemory memoryToMap,
@@ -43,8 +47,7 @@ public unsafe class VkMappedMemory<T> : IDisposable
         _ctx = ctx;
         _device = device;
         _memory = memoryToMap;
-        Length = size;
-        // var structSize = ;
+        Length = size/(ulong)sizeof(T);
         var offsetInBytes = offset;
         var sizeInBytes = size;
         void* tmp;
@@ -97,13 +100,24 @@ public unsafe class VkMappedMemory<T> : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposedValue)
         {
             _ctx.Api.UnmapMemory(_device.Device, _memory);
             _disposedValue = true;
         }
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        for(int i = 0; (ulong)i < Length; i++)
+            yield return this[i];
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 
     ~VkMappedMemory()

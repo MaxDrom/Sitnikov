@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Silk.NET.Vulkan;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
@@ -6,24 +7,16 @@ namespace Sitnikov.BoidsVulkan;
 
 using Buffer = Buffer;
 
-public class VkCommandBuffer
+public class VkCommandBuffer(VkContext ctx,
+    VkDevice device,
+    VkCommandPool pool,
+    CommandBuffer buffer
+)
 {
-    private readonly VkContext _ctx;
-    private readonly VkDevice _device;
-    private readonly VkCommandPool _pool;
+    private readonly VkDevice _device = device;
+    private readonly VkCommandPool _pool = pool;
 
-    public VkCommandBuffer(VkContext ctx,
-        VkDevice device,
-        VkCommandPool pool,
-        CommandBuffer buffer)
-    {
-        _ctx = ctx;
-        _device = device;
-        _pool = pool;
-        Buffer = buffer;
-    }
-
-    public CommandBuffer Buffer { get; }
+    public CommandBuffer Buffer { get; } = buffer;
 
     public VkCommandRecordingObject Begin(
         CommandBufferUsageFlags flags)
@@ -36,50 +29,56 @@ public class VkCommandBuffer
 
         unsafe
         {
-            if (_ctx.Api.BeginCommandBuffer(Buffer, &beginInfo) !=
+            if (ctx.Api.BeginCommandBuffer(Buffer, &beginInfo) !=
                 Result.Success)
                 throw new Exception("Failed to begin command buffer");
         }
 
-        return new VkCommandRecordingObject(_ctx, this);
+        return new VkCommandRecordingObject(ctx, this);
     }
 
     public void Reset(CommandBufferResetFlags flags)
     {
-        _ctx.Api.ResetCommandBuffer(Buffer, flags);
+        ctx.Api.ResetCommandBuffer(Buffer, flags);
     }
 
     public unsafe void Submit(Queue queue,
         VkFence fence,
-        IEnumerable<VkSemaphore> waitSemaphores,
-        IEnumerable<VkSemaphore> signalSemaphores)
+        VkSemaphore[] waitSemaphores,
+        VkSemaphore[] signalSemaphores)
     {
-        var tmp = waitSemaphores.Select(z => z.Semaphore).ToArray();
-        var flags = waitSemaphores.Select(z => z.Flag).ToArray();
-        var signalTmp = signalSemaphores.Select(z => z.Semaphore)
-            .ToArray();
-        fixed (Semaphore* pSemaphores = tmp)
+        var waits = waitSemaphores
+            .Select(z => z.Semaphore).ToArray();
+        var stageMasks =
+            waitSemaphores
+                .Select(z => z.Flag).ToArray();
+        var signals = signalSemaphores
+            .Select(z => z.Semaphore).ToArray();
+
+        fixed (Semaphore* pWaits = waits)
         {
-            fixed (PipelineStageFlags* pwaitStageMask = flags)
+            fixed (PipelineStageFlags* pStageMasks = stageMasks)
             {
-                fixed (Semaphore* pSignalSemaphores = signalTmp)
+                fixed (Semaphore* pSignals = signals)
                 {
                     var pb = Buffer;
                     SubmitInfo submitInfo = new()
                     {
                         SType = StructureType.SubmitInfo,
-                        WaitSemaphoreCount = (uint)tmp.Length,
-                        PWaitSemaphores = pSemaphores,
-                        PWaitDstStageMask = pwaitStageMask,
+                        WaitSemaphoreCount = (uint)waits.Length,
+                        PWaitSemaphores = pWaits,
+                        PWaitDstStageMask =
+                            pStageMasks,
                         SignalSemaphoreCount =
-                            (uint)signalTmp.Length,
-                        PSignalSemaphores = pSignalSemaphores,
+                            (uint)signals.Length,
+                        PSignalSemaphores =
+                            pSignals,
                         CommandBufferCount = 1,
                         PCommandBuffers = &pb,
                     };
 
-                    if (_ctx.Api.QueueSubmit(queue, 1u,
-                            ref submitInfo, fence.InternalFence) !=
+                    if (ctx.Api.QueueSubmit(queue, 1u,
+                            in submitInfo, fence.InternalFence) !=
                         Result.Success)
                         throw new Exception(
                             "Failed to submit buffer");
@@ -124,7 +123,7 @@ public class VkCommandBuffer
                     RenderPass = renderPass.RenderPass,
                 };
                 _ctx.Api.CmdBeginRenderPass(_buffer.Buffer,
-                    ref renderPassInfo, SubpassContents.Inline);
+                    in renderPassInfo, SubpassContents.Inline);
             }
 
             return new VkCommandRecordingRenderObject(_ctx, _buffer,
@@ -145,7 +144,7 @@ public class VkCommandBuffer
                 Size = size,
             };
             _ctx.Api.CmdCopyBuffer(_buffer.Buffer, src.Buffer,
-                dst.Buffer, 1, ref region);
+                dst.Buffer, 1, in region);
         }
 
         public void BindVertexBuffers(int firstBinding,
@@ -154,50 +153,33 @@ public class VkCommandBuffer
         {
             unsafe
             {
-                var tmp = stackalloc Buffer[buffers.Length];
+                var pBuffers = stackalloc Buffer[buffers.Length];
                 for (var i = 0; i < buffers.Length; i++)
-                    tmp[i] = buffers[i].Buffer;
+                    pBuffers[i] = buffers[i].Buffer;
 
-                var tmp2 = stackalloc ulong[offsets.Length];
+                var pOffsets = stackalloc ulong[offsets.Length];
                 for (var i = 0; i < offsets.Length; i++)
-                    tmp2[i] = offsets[i];
+                    pOffsets[i] = offsets[i];
 
                 _ctx.Api.CmdBindVertexBuffers(_buffer.Buffer,
-                    (uint)firstBinding, (uint)buffers.Length, tmp,
-                    tmp2);
+                    (uint)firstBinding, (uint)buffers.Length, pBuffers,
+                    pOffsets);
             }
         }
 
         public void PipelineBarrier(PipelineStageFlags srcStageFlags,
             PipelineStageFlags dstStageFlags,
             DependencyFlags dependencyFlags,
-            MemoryBarrier[] memoryBarriers = null,
-            BufferMemoryBarrier[] bufferMemoryBarriers = null,
-            ImageMemoryBarrier[] imageMemoryBarriers = null)
+            ReadOnlySpan<MemoryBarrier> memoryBarriers = default,
+            ReadOnlySpan<BufferMemoryBarrier> bufferMemoryBarriers = default,
+            ReadOnlySpan<ImageMemoryBarrier> imageMemoryBarriers = default)
         {
-            unsafe
-            {
-                fixed (MemoryBarrier* pmem = memoryBarriers)
-                {
-                    fixed (ImageMemoryBarrier* pmemImage =
-                               imageMemoryBarriers)
-                    {
-                        fixed (BufferMemoryBarrier* pmemBuffer =
-                                   bufferMemoryBarriers)
-                        {
-                            _ctx.Api.CmdPipelineBarrier(
-                                _buffer.Buffer, srcStageFlags,
-                                dstStageFlags, dependencyFlags,
-                                (uint)(memoryBarriers?.Length ?? 0),
-                                pmem,
-                                (uint)(bufferMemoryBarriers?.Length ??
-                                       0), pmemBuffer,
-                                (uint)(imageMemoryBarriers?.Length ??
-                                       0), pmemImage);
-                        }
-                    }
-                }
-            }
+            _ctx.Api.CmdPipelineBarrier(
+                _buffer.Buffer, srcStageFlags,
+                dstStageFlags, dependencyFlags,
+                memoryBarriers,
+                bufferMemoryBarriers,
+                imageMemoryBarriers);
         }
 
         public void BindIndexBuffer(VkBuffer<uint> buffer,
@@ -210,45 +192,37 @@ public class VkCommandBuffer
         }
 
         public void BindDescriptorSets(PipelineBindPoint bindPoint,
-            PipelineLayout piplineLayout,
-            DescriptorSet[] sets,
-            uint[] dynamicOffsets = null,
+            PipelineLayout pipelineLayout,
+            ReadOnlySpan<DescriptorSet> sets,
+            ReadOnlySpan<uint> dynamicOffsets = default,
             uint firstSet = 0)
         {
             _ctx.Api.CmdBindDescriptorSets(_buffer.Buffer, bindPoint,
-                piplineLayout, 0,
-                new ReadOnlySpan<DescriptorSet>(sets),
-                new ReadOnlySpan<uint>(dynamicOffsets));
+                pipelineLayout, firstSet,
+                sets,
+                dynamicOffsets);
         }
 
-        public void BindPipline(IVkPipeline pipeline)
+        public void BindPipeline(IVkPipeline pipeline)
         {
             _ctx.Api.CmdBindPipeline(_buffer.Buffer,
                 pipeline.BindPoint, pipeline.InternalPipeline);
         }
     }
 
-    public class VkCommandRecordingRenderObject : IDisposable
+    public class VkCommandRecordingRenderObject(VkContext ctx,
+        VkCommandBuffer buffer,
+        VkRenderPass renderPass,
+        VkFrameBuffer framebuffer
+    )
+        : IDisposable
     {
-        private readonly VkCommandBuffer _buffer;
-        private readonly VkContext _ctx;
-        private VkFrameBuffer _framebuffer;
-        private VkRenderPass _renderPass;
-
-        public VkCommandRecordingRenderObject(VkContext ctx,
-            VkCommandBuffer buffer,
-            VkRenderPass renderPass,
-            VkFrameBuffer framebuffer)
-        {
-            _buffer = buffer;
-            _ctx = ctx;
-            _renderPass = renderPass;
-            _framebuffer = framebuffer;
-        }
+        private VkFrameBuffer _framebuffer = framebuffer;
+        private VkRenderPass _renderPass = renderPass;
 
         public void Dispose()
         {
-            _ctx.Api.CmdEndRenderPass(_buffer.Buffer);
+            ctx.Api.CmdEndRenderPass(buffer.Buffer);
         }
 
         public void Draw(uint vertexCount,
@@ -256,7 +230,7 @@ public class VkCommandBuffer
             uint firstVertex,
             uint firstInstance)
         {
-            _ctx.Api.CmdDraw(_buffer.Buffer, vertexCount,
+            ctx.Api.CmdDraw(buffer.Buffer, vertexCount,
                 instanceCount, firstVertex, firstInstance);
         }
 
@@ -265,27 +239,27 @@ public class VkCommandBuffer
             uint firstIndex,
             uint firstInstance)
         {
-            _ctx.Api.CmdDrawIndexed(_buffer.Buffer, indexCount,
+            ctx.Api.CmdDrawIndexed(buffer.Buffer, indexCount,
                 instanceCount, firstIndex, 0, firstInstance);
         }
 
         public void SetScissor(ref Rect2D scissor)
         {
-            _ctx.Api.CmdSetScissor(_buffer.Buffer, 0, 1, ref scissor);
+            ctx.Api.CmdSetScissor(buffer.Buffer, 0, 1, in scissor);
         }
 
         public unsafe void SetScissor(Rect2D[] scissors)
         {
             fixed (Rect2D* pScissors = scissors)
             {
-                _ctx.Api.CmdSetScissor(_buffer.Buffer, 0,
+                ctx.Api.CmdSetScissor(buffer.Buffer, 0,
                     (uint)scissors.Length, pScissors);
             }
         }
 
         public void SetBlendConstant(ReadOnlySpan<float> constants)
         {
-            _ctx.Api.CmdSetBlendConstants(_buffer.Buffer, constants);
+            ctx.Api.CmdSetBlendConstants(buffer.Buffer, constants);
         }
 
         public void SetBlendConstant(float[] constants)
@@ -294,7 +268,7 @@ public class VkCommandBuffer
             {
                 fixed (float* tmp = constants)
                 {
-                    _ctx.Api.CmdSetBlendConstants(_buffer.Buffer,
+                    ctx.Api.CmdSetBlendConstants(buffer.Buffer,
                         tmp);
                 }
             }
@@ -302,8 +276,8 @@ public class VkCommandBuffer
 
         public void SetViewport(ref Viewport viewport)
         {
-            _ctx.Api.CmdSetViewport(_buffer.Buffer, 0, 1,
-                ref viewport);
+            ctx.Api.CmdSetViewport(buffer.Buffer, 0, 1,
+                in viewport);
         }
     }
 }

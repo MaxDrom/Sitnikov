@@ -30,9 +30,11 @@ public static class MyMath
     public static TField Pow<TField>(TField x, int k)
         where TField : INumber<TField>
     {
-        var cache = new Dictionary<int, TField>();
-        cache[0] = TField.One;
-        cache[1] = x;
+        var cache = new Dictionary<int, TField>
+        {
+            [0] = TField.One,
+            [1] = x,
+        };
         if (k < 0) return TField.One / RecursicePow(x, -k, cache);
 
         return RecursicePow(x, k, cache);

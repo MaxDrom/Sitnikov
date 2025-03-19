@@ -54,7 +54,7 @@ public class VkBuffer<T> : IVkBuffer, IDisposable
         }
     }
 
-    public VkBuffer(ulong length,
+    public VkBuffer(ulong size,
         BufferUsageFlags usage,
         SharingMode sharingMode,
         VkAllocator allocator)
@@ -62,7 +62,7 @@ public class VkBuffer<T> : IVkBuffer, IDisposable
         _ctx = allocator.Ctx;
         _device = allocator.Device;
         _allocator = allocator;
-        Size = length * (ulong)Marshal.SizeOf<T>();
+        Size = size;// length * (ulong)Marshal.SizeOf<T>();
         unsafe
         {
             var createInfo = new BufferCreateInfo

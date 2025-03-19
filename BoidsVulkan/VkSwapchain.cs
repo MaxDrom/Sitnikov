@@ -117,11 +117,9 @@ public class VkSwapchain : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!_disposedValue)
-        {
-            _swapchainCtx.DestroySwapchain(_swapchain);
-            _disposedValue = true;
-        }
+        if (_disposedValue) return;
+        _swapchainCtx.DestroySwapchain(_swapchain);
+        _disposedValue = true;
     }
 
     ~VkSwapchain()

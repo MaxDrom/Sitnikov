@@ -1,10 +1,45 @@
 ﻿using System.Collections.Concurrent;
 using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Text;
+using Autofac;
+using Silk.NET.Core.Native;
 using Silk.NET.Windowing;
+using Sitnikov.symplecticIntegrators;
 using YamlDotNet.Serialization;
+using Silk.NET.Maths;
+using Silk.NET.Vulkan;
+using Silk.NET.Vulkan.Extensions.KHR;
+using Sitnikov.BoidsVulkan;
+using Sitnikov.BoidsVulkan.VkAllocatorSystem;
 
-namespace SymplecticIntegrators;
+namespace Sitnikov;
 
+public delegate SymplecticIntegrator<double, Vector<double>>
+    SymplecticFactory(
+        Func<Vector<double>, Vector<double>> dV,
+        Func<Vector<double>, Vector<double>> dT);
+
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct Instance : IVertexData<Instance>
+{
+    [VertexInputDescription(2, Format.R32G32Sfloat)]
+    public Vector2D<float> position;
+
+    [VertexInputDescription(4, Format.R32G32Sfloat)]
+    public Vector2D<float> offset;
+
+    [VertexInputDescription(3, Format.R32G32B32A32Sfloat)]
+    public Vector4D<float> color;
+}
+
+public class DisplayFormat
+{
+    public Format Format { get; set; }
+    public ColorSpaceKHR ColorSpace { get; set; }
+
+    public WindowOptions WindowOptions { get; set; }
+}
 
 public class SitnikovConfig
 {
@@ -13,61 +48,75 @@ public class SitnikovConfig
     public int SizeY { get; set; } = 50;
     public (double, double) RangeX { get; set; } = (0, 1);
     public (double, double) RangeY { get; set; } = (0, 1);
-    
-    public IntegratorConfig Integrator{get;set;} = new IntegratorConfig();
-    public PoincareConfig Poincare{get; set;} = null;
 
-    
+    public IntegratorConfig Integrator { get; set; } = new();
+
+    public VisualizationConfig Visualization { get; set; } = new();
+
+    public PoincareConfig Poincare { get; set; } = null;
 }
 
 public class IntegratorConfig
 {
-    public int Order {get; set;} = 2;
-    public double Timestep {get; set;} = 0.01;
+    public int Order { get; set; } = 2;
+    public double Timestep { get; set; } = 0.01;
 }
 
 public class PoincareConfig
 {
-    public int Periods {get; set;} = 10;
+    public int Periods { get; set; } = 10;
 }
 
-class Program
+public class VisualizationConfig
 {
+    public bool OnGPU { get; set; } = false;
+    public double Fade { get; set; } = 5;
 
-    public static ConcurrentDictionary<double, double> KeplerSolutions = new();
+    public (double, double) RangeX { get; set; } = (-2.5, 2.5);
 
-    public static double e = 0.1;
-    public static double dt = 0.01;
+    public (double, double) RangeY { get; set; } = (-2.5, 2.5);
+}
 
-    public static (double, double) SolveKeplerEq(double M)
+internal class Program
+{
+    public static ConcurrentDictionary<double, double>
+        KeplerSolutions = new();
+
+    public static double E = 0.1;
+    public static double Dt = 0.01;
+
+    private static SymplecticIntegrator<double, Vector<double>>
+        _yoshida6;
+
+    public static (double, double) SolveKeplerEq(double m)
     {
-        var E = M;
+        var e = m;
         double sin = 0;
 
         for (var i = 0; i < 10; i++)
         {
-            sin = Math.Sin(E);
-            var newE = M + e * sin;
-            E = newE;
-            E %= 2 * Math.PI;
-            if (E >= Math.PI)
-                E -= 2 * Math.PI;
+            sin = Math.Sin(e);
+            var newE = m + E * sin;
+            e = newE;
+            e %= 2 * Math.PI;
+            if (e >= Math.PI) e -= 2 * Math.PI;
         }
-        return (E, sin);
+
+        return (e, sin);
     }
 
     public static double GetDistance(double t)
     {
-        var M = t;
-        M %= 2 * Math.PI;
-        if (M >= Math.PI)
-            M -= 2 * Math.PI;
-        if (KeplerSolutions.TryGetValue(M, out var result))
+        var m = t;
+        m %= 2 * Math.PI;
+        if (m >= Math.PI) m -= 2 * Math.PI;
+
+        if (KeplerSolutions.TryGetValue(m, out var result))
             return result;
 
-        var (E, sin) = SolveKeplerEq(M);
-        var res = 1 - e * Math.Sqrt(1 - sin * sin);
-        KeplerSolutions.TryAdd(M, res);
+        var (e, sin) = SolveKeplerEq(m);
+        var res = 1 - E * Math.Sqrt(1 - sin * sin);
+        KeplerSolutions.TryAdd(m, res);
         return res;
     }
 
@@ -85,87 +134,212 @@ class Program
 
     public static Vector<double> dT(Vector<double> p)
     {
-        var result = new Vector<double>(2);
-
-        result[0] = p[0];
-        result[1] = 1;
+        var result = new Vector<double>(2) { [0] = p[0], [1] = 1 };
 
         return result;
     }
 
-    static SymplecticIntegrator<double, Vector<double>> yoshida6;
-
-    static async Task Main(string[] args)
+    private static async Task Main(string[] args)
     {
-        ThreadPool.SetMaxThreads(Environment.ProcessorCount, Environment.ProcessorCount);
+        ThreadPool.SetMaxThreads(Environment.ProcessorCount,
+            Environment.ProcessorCount);
         CultureInfo.CurrentCulture = new CultureInfo("en-US", false);
-        CultureInfo.CurrentCulture.NumberFormat.CurrencyDecimalDigits = 28;
-        var deserializer = new DeserializerBuilder()
-                            .Build();
+        CultureInfo.CurrentCulture.NumberFormat
+            .CurrencyDecimalDigits = 28;
+        var deserializer = new DeserializerBuilder().Build();
 
         using var sr = File.OpenText("config.yaml");
         var config = deserializer.Deserialize<SitnikovConfig>(sr);
-        e = config.e;
-        dt = config.Integrator.Timestep;
-        yoshida6 = YoshidaIntegrator<double, Vector<double>>.BuildFromLeapfrog(dV, dT, config.Integrator.Order);
+        E = config.e;
+        Dt = config.Integrator.Timestep;
+
+        var windowOptions = WindowOptions.DefaultVulkan;
+        using var window = Window.Create(windowOptions);
+
+        var gridX = config.SizeX;
+        var gridY = config.SizeY;
+        var instances = new Instance[gridX * gridY];
+        var dx = (float)(config.RangeX.Item2 - config.RangeX.Item1);
+        var dy = (float)(config.RangeY.Item2 - config.RangeY.Item1);
+        for (var xx = 0; xx < gridX; xx++)
+        for (var yy = 0; yy < gridY; yy++)
+        {
+            instances[xx + yy * gridX] = new Instance
+            {
+                position = new Vector2D<float>(
+                    (float)config.RangeX.Item1 +
+                    xx / (gridX - 1f) * dx,
+                    (float)config.RangeY.Item1 +
+                    yy / (gridY - 1f) * dy),
+                color =
+                    new Vector4D<float>(xx / (gridX - 1f),
+                        yy / (gridY - 1f), 1f, 1f),
+                offset = new Vector2D<float>(0, 0),
+            };
+        }
+
+        var builder = new ContainerBuilder();
+        builder.RegisterInstance(config).SingleInstance();
+
+        SymplecticFactory factory = (x, y) =>
+            YoshidaIntegrator<double, Vector<double>>
+                .BuildFromLeapfrog(x, y,
+                    config.Integrator.Order / 2);
+        builder.RegisterInstance(factory).SingleInstance();
+
+        _yoshida6 = YoshidaIntegrator<double, Vector<double>>
+            .BuildFromLeapfrog(dV, dT,
+                config.Integrator.Order / 2);
+        builder.RegisterInstance(_yoshida6).SingleInstance();
+
+
+        if (config.Visualization.OnGPU)
+            builder.RegisterType<ParticleSystemGpu>()
+                .As<IParticleSystem>()
+                .WithParameter("initialData",
+                    instances).SingleInstance();
+        else
+            builder.RegisterType<ParticleSystemCpu>()
+                .As<IParticleSystem>()
+                .WithParameter("initialData",
+                    instances).SingleInstance();
+
+        InitVulkan(builder, window, windowOptions);
+        var container = builder.Build();
+        var particleSystem = container.Resolve<IParticleSystem>();
         if (config.Poincare != null)
         {
-            var taskList = new List<Task<(double, double)[]>>();
-            var gridX = config.SizeX;
-            var gridY = config.SizeY;
-            var dx = config.RangeX.Item2 - config.RangeX.Item1;
-            var dy = config.RangeY.Item2 - config.RangeY.Item1;
-            for (var x = 0; x < gridX; x++)
+            using (var stream =
+                   new StreamWriter("result.dat", false))
             {
-                var q =  config.RangeX.Item1 + dx* x / (double)(gridX -1);
-                for (var y = 0; y < gridY; y++)
+                for (int i = 1; i <= config.Poincare.Periods; i++)
                 {
-                    var p =  config.RangeY.Item1 + dx* y / (double)(gridY -1);
-                    taskList.Add(
-                                Task.Run(() =>
-                                            PoincareMap(q,
-                                                        p,
-                                                        config.Poincare.Periods)
-                                        ));
+                    double T = 0;
+                    while (T < 2 * Math.PI)
+                    {
+                        await particleSystem.Update(delta: Dt, T);
+                        T += Dt;
+                    }
 
+                    foreach (var instance in particleSystem
+                                 .DataOnCpu)
+                        stream.Write(
+                            $"{instance.position.X} {instance.position.Y}\n");
+
+                    var blocksCount = 50;
+                    var progressBlockCount = (int)Math.Floor(i *
+                        blocksCount /
+                        (double)config.Poincare.Periods);
+                    var animation = @"|/-\";
+                    string text = string.Format("[{0}{1}] {2,3}% {3}",
+                        new string('#',
+                            progressBlockCount),
+                        new string('-', blocksCount - progressBlockCount),
+                        Math.Floor(100*i/(double)config.Poincare.Periods),
+                        animation[
+                            i % animation.Length]);
+                    var stringBuilder = new StringBuilder();
+                    stringBuilder.Append('\b', text.Length);
+                    stringBuilder.Append(text);
+                    Console.Write(stringBuilder);
                 }
             }
-            var totalResults = await Task.WhenAll(taskList);
-
-            using var file = new StreamWriter("result.dat");
-            foreach (var res in totalResults)
-                foreach (var (q, p) in res)
-                    file.WriteLine($"{q} {p}");
-
-            return;
         }
-        using var gameWindow = new GameWindow(WindowOptions.DefaultVulkan, yoshida6, config);
+        else
+        {
+            var gameWindow = container.Resolve<GameWindow>();
+            gameWindow.Run();
+        }
 
-        gameWindow.Run();
+        container.Dispose();
     }
 
-    static (double, double)[] PoincareMap(double q0, double p0, int niters)
+    public static void InitVulkan(ContainerBuilder builder,
+        IWindow window,
+        WindowOptions windowOptions)
     {
-        var result = new (double, double)[niters];
-        result[0] = (q0, p0);
-        double qq = q0;
-        double pp = p0;
-        for (var i = 0; i < niters; i++)
+        window.Initialize();
+        if (window.VkSurface is null)
+            throw new Exception(
+                "Windowing platform doesn't support Vulkan.");
+
+        string[] extensions;
+        unsafe
         {
-
-            foreach (var (t, q, p) in yoshida6
-                                    .Integrate(Math.PI * 2,
-                                        dt,
-                                        new([qq, 0]),
-                                        new([pp, 0])))
-            {
-                qq = q[0];
-                pp = p[0];
-            }
-
-            result[i] = (qq, pp);
+            var pp =
+                window.VkSurface
+                    .GetRequiredExtensions(out var count);
+            extensions = new string[count];
+            SilkMarshal.CopyPtrToStringArray((nint)pp, extensions);
         }
 
-        return result;
+        var ctx
+            = new VkContext(window, extensions);
+        var physicalDevice = ctx.Api
+            .GetPhysicalDevices(ctx.Instance).ToArray()[0];
+        string deviceName;
+        unsafe
+        {
+            var property =
+                ctx.Api.GetPhysicalDeviceProperty(physicalDevice);
+            deviceName =
+                SilkMarshal.PtrToString((nint)property.DeviceName)!;
+
+            uint nn;
+            ctx.SurfaceApi.GetPhysicalDeviceSurfaceFormats(
+                physicalDevice, ctx.Surface, &nn, null);
+            var formats = new SurfaceFormatKHR[nn];
+            fixed (SurfaceFormatKHR* pFormat = formats)
+            {
+                ctx.SurfaceApi.GetPhysicalDeviceSurfaceFormats(
+                    physicalDevice, ctx.Surface, &nn, pFormat);
+            }
+
+            var format = formats[0].Format;
+            var colorSpace = formats[0].ColorSpace;
+            foreach (var formatCap in formats)
+                if (formatCap.Format == Format.R16G16B16A16Sfloat)
+                {
+                    colorSpace = formatCap.ColorSpace;
+                    break;
+                }
+
+            builder.RegisterInstance(
+                    new DisplayFormat()
+                    {
+                        Format = format, ColorSpace = colorSpace,
+                        WindowOptions = windowOptions
+                    })
+                .SingleInstance();
+        }
+
+
+        Console.WriteLine(deviceName);
+
+        builder.RegisterInstance(window).SingleInstance();
+        builder.RegisterInstance(ctx).SingleInstance();
+        builder.RegisterInstance(new VkDevice(ctx,
+            physicalDevice, [],
+            [KhrSwapchain.ExtensionName])).SingleInstance();
+
+
+        builder.RegisterType<StupidAllocator>().As<VkAllocator>()
+            .WithParameter("requiredProperties",
+                MemoryPropertyFlags.None)
+            .WithParameter("preferredFlags",
+                MemoryHeapFlags.DeviceLocalBit)
+            .WithMetadata("Type", "DeviceLocal")
+            .SingleInstance();
+
+        builder.RegisterType<StupidAllocator>().As<VkAllocator>()
+            .WithParameter("requiredProperties",
+                MemoryPropertyFlags.HostVisibleBit |
+                MemoryPropertyFlags.HostCoherentBit)
+            .WithParameter("preferredFlags",
+                MemoryHeapFlags.None)
+            .WithMetadata("Type", "HostVisible")
+            .SingleInstance();
+
+        builder.RegisterType<GameWindow>().AsSelf().SingleInstance();
     }
 }

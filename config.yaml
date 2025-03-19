@@ -1,12 +1,25 @@
-e: 0.12
-SizeX: 70
-SizeY: 70
-RangeX: 
-  Item1: 0
-  Item2: 0.5
-RangeY: 
-  Item1: 0
-  Item2: 0.5
+e: 0.1
+SizeX: 400
+SizeY: 400
+RangeX:
+  Item1: -2.5
+  Item2: 2.5
+RangeY:
+  Item1: -2.5
+  Item2: 2.5
 Integrator:
-  Order: 2
+  Order: 8
   Timestep: 0.01
+
+Poincare:
+  Periods: 1000
+
+Visualization:
+  OnGPU: true
+  Fade: 10
+  RangeX:
+    Item1: -5
+    Item2: 5
+  RangeY:
+    Item1: -3
+    Item2: 3

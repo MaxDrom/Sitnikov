@@ -12,9 +12,9 @@ public class VkVertexInputStateCreateInfo : IDisposable
     private GCHandle _vertexInputAttributeDescriptionsHandle;
 
     public VkVertexInputStateCreateInfo(
-        IEnumerable<VertexInputBindingDescription>
+        VertexInputBindingDescription[]
             bindingDescriptions,
-        IEnumerable<VertexInputAttributeDescription>
+        VertexInputAttributeDescription[]
             vertexInputAttributeDescriptions)
     {
         _vertexInputAttributeDescriptionsHandle = GCHandle.Alloc(
@@ -31,14 +31,14 @@ public class VkVertexInputStateCreateInfo : IDisposable
                         StructureType
                             .PipelineVertexInputStateCreateInfo,
                     VertexBindingDescriptionCount =
-                        (uint)bindingDescriptions.Count(),
+                        (uint)bindingDescriptions.Length,
                     PVertexBindingDescriptions =
                         (VertexInputBindingDescription*)
                         _bindingDescriptionsHandle
                             .AddrOfPinnedObject(),
                     VertexAttributeDescriptionCount =
                         (uint)vertexInputAttributeDescriptions
-                            .Count(),
+                            .Length,
                     PVertexAttributeDescriptions =
                         (VertexInputAttributeDescription*)
                         _vertexInputAttributeDescriptionsHandle
@@ -58,12 +58,10 @@ public class VkVertexInputStateCreateInfo : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!_disposedValue)
-        {
-            _bindingDescriptionsHandle.Free();
-            _vertexInputAttributeDescriptionsHandle.Free();
-            _disposedValue = true;
-        }
+        if (_disposedValue) return;
+        _bindingDescriptionsHandle.Free();
+        _vertexInputAttributeDescriptionsHandle.Free();
+        _disposedValue = true;
     }
 
     ~VkVertexInputStateCreateInfo()

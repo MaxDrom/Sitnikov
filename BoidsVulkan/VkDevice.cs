@@ -156,6 +156,8 @@ public unsafe class VkDevice : IDisposable
     public uint GraphicsFamilyIndex => _graphicsFamilyIndex!.Value;
 
     public uint PresentFamilyIndex => _presentFamilyIndex!.Value;
+    public uint ComputeFamilyIndex => _computeFamilyIndex!.Value;
+    public uint TransferFamilyIndex => _transferFamilyIndex!.Value;
 
     public Queue GraphicsQueue => _graphicsQueue;
 
@@ -164,7 +166,7 @@ public unsafe class VkDevice : IDisposable
     public Queue ComputeQueue => _computeQueue;
 
     public Queue TransferQueue => _transferQueue;
-
+    
     public void Dispose()
     {
         Dispose(true);

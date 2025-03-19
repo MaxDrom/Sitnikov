@@ -31,7 +31,7 @@ public class VkImageView : IDisposable
         unsafe
         {
             if (ctx.Api.CreateImageView(device.Device,
-                    ref imageCreateInfo, null, out _imageView) !=
+                    in imageCreateInfo, null, out _imageView) !=
                 Result.Success)
                 throw new Exception("Failed to create image view");
         }
@@ -47,16 +47,14 @@ public class VkImageView : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!_disposedValue)
+        if (_disposedValue) return;
+        unsafe
         {
-            unsafe
-            {
-                _ctx.Api.DestroyImageView(_device.Device, _imageView,
-                    null);
-            }
-
-            _disposedValue = true;
+            _ctx.Api.DestroyImageView(_device.Device, _imageView,
+                null);
         }
+
+        _disposedValue = true;
     }
 
     ~VkImageView()

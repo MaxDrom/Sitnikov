@@ -12,9 +12,7 @@ public class AllocationNode(DeviceMemory deviceMemory, ulong offset)
 
 public interface IVkAllocatorFactory
 {
-    VkAllocator Create(VkContext ctx,
-        VkDevice device,
-        MemoryPropertyFlags requiredProperties,
+    VkAllocator Create(MemoryPropertyFlags requiredProperties,
         MemoryHeapFlags preferredFlags);
 }
 

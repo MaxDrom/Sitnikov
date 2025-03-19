@@ -12,52 +12,52 @@ public class VkRenderPass : IDisposable
     public VkRenderPass(VkContext ctx,
         VkDevice device,
         VkSubpassInfo[] subpassInfos,
-        IEnumerable<SubpassDependency> subpassDependencies,
-        IEnumerable<AttachmentDescription> attachmentDescriptions)
+        SubpassDependency[] subpassDependencies,
+        AttachmentDescription[] attachmentDescriptions)
     {
         _ctx = ctx;
         _device = device;
 
         unsafe
         {
-            var psubpassDescr =
+            var pSubPassDescription =
                 stackalloc SubpassDescription[subpassInfos.Length];
             var clrAttachmentLength = subpassInfos
                 .Select(z => z.ColorAttachmentReferences.Length)
                 .Sum();
-            var clrAttachmentBuffer =
+            var colorAttachmentBuffer =
                 stackalloc AttachmentReference[clrAttachmentLength];
-            var clrAttachmentBufferCopy = clrAttachmentBuffer;
-            foreach (var subpassInfo in subpassInfos)
+            var clrAttachmentBufferCopy = colorAttachmentBuffer;
+            foreach (var subPassInfo in subpassInfos)
             {
                 for (var i = 0;
-                     i < subpassInfo.ColorAttachmentReferences.Length;
+                     i < subPassInfo.ColorAttachmentReferences.Length;
                      i++)
-                    clrAttachmentBufferCopy[i] = subpassInfo
+                    clrAttachmentBufferCopy[i] = subPassInfo
                         .ColorAttachmentReferences[i];
 
-                clrAttachmentBufferCopy += subpassInfo
+                clrAttachmentBufferCopy += subPassInfo
                     .ColorAttachmentReferences.Length;
             }
 
             for (var i = 0; i < subpassInfos.Length; i++)
             {
-                psubpassDescr[i] = new SubpassDescription
+                pSubPassDescription[i] = new SubpassDescription
                 {
                     PipelineBindPoint = subpassInfos[i].BindPoint,
                     ColorAttachmentCount =
                         (uint)subpassInfos[i]
                             .ColorAttachmentReferences.Length,
-                    PColorAttachments = clrAttachmentBuffer,
+                    PColorAttachments = colorAttachmentBuffer,
                 };
-                clrAttachmentBuffer += subpassInfos[i]
+                colorAttachmentBuffer += subpassInfos[i]
                     .ColorAttachmentReferences.Length;
             }
 
             var renderPassCreateInfo = new RenderPassCreateInfo
             {
                 SType = StructureType.RenderPassCreateInfo,
-                PSubpasses = psubpassDescr,
+                PSubpasses = pSubPassDescription,
                 SubpassCount = (uint)subpassInfos.Length,
                 AttachmentCount =
                     (uint)attachmentDescriptions.Count(),

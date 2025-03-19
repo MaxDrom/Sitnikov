@@ -15,7 +15,7 @@ public class VkFrameBuffer : IDisposable
         uint width,
         uint height,
         uint layers,
-        IEnumerable<VkImageView> attachments)
+        VkImageView[] attachments)
     {
         _ctx = ctx;
         _device = device;
@@ -27,7 +27,7 @@ public class VkFrameBuffer : IDisposable
             Width = width,
             Height = height,
             Layers = layers,
-            AttachmentCount = (uint)attachments.Count(),
+            AttachmentCount = (uint)attachments.Length,
         };
         unsafe
         {
@@ -37,7 +37,7 @@ public class VkFrameBuffer : IDisposable
                 createInfo.PAttachments = pAttachments;
 
                 if (_ctx.Api.CreateFramebuffer(_device.Device,
-                        ref createInfo, null, out _frameBuffer) !=
+                        in createInfo, null, out _frameBuffer) !=
                     Result.Success)
                     throw new Exception(
                         "Failed to create framebuffer");

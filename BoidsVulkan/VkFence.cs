@@ -21,7 +21,7 @@ public class VkFence : IDisposable
 
         unsafe
         {
-            if (_ctx.Api.CreateFence(_device.Device, ref createInfo,
+            if (_ctx.Api.CreateFence(_device.Device, in createInfo,
                     null, out _fence) != Result.Success)
                 throw new Exception("Failed to create fence");
         }

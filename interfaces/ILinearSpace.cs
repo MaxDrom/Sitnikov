@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace Sitnikov.interfaces;
 
-public interface ILinearSpace<TSelf, TField> :
+public interface ILinearSpace<TSelf, in TField> :
     IAdditionOperators<TSelf, TSelf, TSelf>,
     IAdditiveIdentity<TSelf, TSelf>
     where TField : INumber<TField>

@@ -1,3 +1,4 @@
+using Autofac.Features.AttributeFilters;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Sitnikov.BoidsVulkan;
@@ -5,23 +6,6 @@ using Sitnikov.BoidsVulkan.VkAllocatorSystem;
 using Sitnikov.symplecticIntegrators;
 
 namespace Sitnikov;
-
-public class ParticleSystemCpuFactory(
-    SymplecticIntegrator<double, Vector<double>> integrator
-)
-    : IParticleSystemFactory
-{
-    public IParticleSystem Create(VkContext ctx,
-        VkDevice device,
-        VkCommandPool commandPool,
-        VkAllocator allocator,
-        VkAllocator staggingAllocator,
-        Instance[] initialData)
-    {
-        return new ParticleSystemCpu(staggingAllocator, initialData,
-            integrator);
-    }
-}
 
 public sealed class ParticleSystemCpu : IParticleSystem
 {
@@ -33,20 +17,31 @@ public sealed class ParticleSystemCpu : IParticleSystem
     private readonly VkMappedMemory<Instance> _mapped;
     private bool _disposedValue;
 
-    public ParticleSystemCpu(VkAllocator stagingAllocator,
+    public ParticleSystemCpu([MetadataFilter("Type", "HostVisible")]VkAllocator stagingAllocator,
         Instance[] initialData,
         SymplecticIntegrator<double, Vector<double>> integrator)
     {
         _data = new Instance[initialData.Length];
         Array.Copy(initialData, _data, initialData.Length);
         _integrator = integrator;
-        Buffer = new VkBuffer<Instance>(_data.Length,
+        _buffer = new VkBuffer<Instance>(_data.Length,
             BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive,
             stagingAllocator);
         _mapped = Buffer.Map(0, _data.Length);
     }
 
-    public VkBuffer<Instance> Buffer { get; }
+    public VkBuffer<Instance> Buffer
+    {
+        get
+        {
+            for (var i = 0; i < _data.Length; i++) _mapped[i] = _data[i];
+            return _buffer;
+        }
+    }
+
+    public IEnumerable<Instance> DataOnCpu => _data;
+
+    private VkBuffer<Instance> _buffer;
 
     public async Task Update(double delta, double totalTime)
     {
@@ -68,8 +63,6 @@ public sealed class ParticleSystemCpu : IParticleSystem
         }
 
         await Task.WhenAll(taskList);
-
-        for (var i = 0; i < _data.Length; i++) _mapped[i] = _data[i];
     }
 
     public void Dispose()

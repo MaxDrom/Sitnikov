@@ -35,14 +35,14 @@ public class VkSetLayout : IDisposable
     {
         _ctx = ctx;
         _device = device;
-        fixed (DescriptorSetLayoutBinding* pbindings = bindings)
+        fixed (DescriptorSetLayoutBinding* pBindings = bindings)
         {
             DescriptorSetLayoutCreateInfo info = new()
             {
                 SType =
                     StructureType.DescriptorSetLayoutCreateInfo,
                 Flags = DescriptorSetLayoutCreateFlags.None,
-                PBindings = pbindings,
+                PBindings = pBindings,
                 BindingCount = (uint)bindings.Length,
             };
             if (_ctx.Api.CreateDescriptorSetLayout(_device.Device,
@@ -66,23 +66,20 @@ public class VkSetLayout : IDisposable
     {
         unsafe
         {
-            var bindings = new List<DescriptorSetLayoutBinding>();
-            foreach (var descriptor in typeof(T).GetProperties()
-                         .Select(z =>
-                             z.GetCustomAttribute<
-                                 UniformDescriptionAttribute>())
-                         .Where(z => z != null))
-                bindings.Add(new DescriptorSetLayoutBinding
+            var bindings = typeof(T).GetProperties()
+                .Select(z => z.GetCustomAttribute<UniformDescriptionAttribute>())
+                .Where(z => z != null)
+                .Select(descriptor => new DescriptorSetLayoutBinding
                 {
                     Binding = (uint)descriptor.Binding,
                     DescriptorType = descriptor.DescriptorType,
-                    DescriptorCount =
-                        (uint)descriptor.DescriptorCount,
+                    DescriptorCount = (uint)descriptor.DescriptorCount,
                     StageFlags = descriptor.ShaderStageFlags,
                     PImmutableSamplers = null,
-                });
+                })
+                .ToList();
 
-            fixed (DescriptorSetLayoutBinding* pbindings =
+            fixed (DescriptorSetLayoutBinding* pBindings =
                        bindings.ToArray())
             {
                 var createInfo = new DescriptorSetLayoutCreateInfo
@@ -91,7 +88,7 @@ public class VkSetLayout : IDisposable
                         StructureType
                             .DescriptorSetLayoutCreateInfo,
                     BindingCount = (uint)bindings.Count,
-                    PBindings = pbindings,
+                    PBindings = pBindings,
                 };
 
                 return new VkSetLayout(ctx, device, createInfo);
@@ -101,16 +98,14 @@ public class VkSetLayout : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (!_disposedValue)
+        if (_disposedValue) return;
+        unsafe
         {
-            unsafe
-            {
-                _ctx.Api.DestroyDescriptorSetLayout(_device.Device,
-                    _setLayout, null);
-            }
-
-            _disposedValue = true;
+            _ctx.Api.DestroyDescriptorSetLayout(_device.Device,
+                _setLayout, null);
         }
+
+        _disposedValue = true;
     }
 
     ~VkSetLayout()

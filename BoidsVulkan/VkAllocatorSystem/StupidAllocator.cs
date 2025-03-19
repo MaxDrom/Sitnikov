@@ -2,17 +2,6 @@ using Silk.NET.Vulkan;
 
 namespace Sitnikov.BoidsVulkan.VkAllocatorSystem;
 
-public class StupidAllocatorFactory : IVkAllocatorFactory
-{
-    public VkAllocator Create(VkContext ctx,
-        VkDevice device,
-        MemoryPropertyFlags requiredProperties,
-        MemoryHeapFlags preferredFlags)
-    {
-        return new StupidAllocator(ctx, device, requiredProperties,
-            preferredFlags);
-    }
-}
 
 public class StupidAllocator : VkAllocator
 {
@@ -103,8 +92,7 @@ public class StupidAllocator : VkAllocator
     {
         using var writeLock = _rwlock.WriteLock();
         if (!_allocatedNodes.Contains(node))
-            throw new Exception(
-                "Trying deallocate not allocated memory!");
+            return;
 
         _allocatedNodes.Remove(node);
         Ctx.Api.FreeMemory(Device.Device, node.Memory, null);

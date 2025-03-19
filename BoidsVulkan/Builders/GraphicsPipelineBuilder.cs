@@ -242,13 +242,12 @@ public sealed class GraphicsPipelineBuilder
         {
             using var vertexInputStateCreateInfo =
                 new VkVertexInputStateCreateInfo(
-                    _scope._vertexInputBindingDescriptions,
-                    _scope._vertexInputAttributeDescriptions);
+                    _scope._vertexInputBindingDescriptions.ToArray(),
+                    _scope._vertexInputAttributeDescriptions.ToArray());
 
-            uint sampleMask = 0;
             if (_scope._sampleMask != null)
             {
-                sampleMask = _scope._sampleMask.Value;
+                var sampleMask = _scope._sampleMask.Value;
                 _scope._multisamplingSettings.PSampleMask =
                     (uint*)Unsafe.AsPointer(ref sampleMask);
             }

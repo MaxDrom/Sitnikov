@@ -2,21 +2,15 @@ using Silk.NET.Vulkan;
 
 namespace Sitnikov.BoidsVulkan;
 
-public class VkSubpassInfo
+public class VkSubpassInfo(PipelineBindPoint bindPoint,
+    AttachmentReference[] colorAttachmentReferences
+)
 {
-    public VkSubpassInfo(PipelineBindPoint bindPoint,
-        IEnumerable<AttachmentReference> colorAttachmentReferences)
-    {
-        ColorAttachmentReferences =
-            colorAttachmentReferences.ToArray();
-        BindPoint = bindPoint;
-    }
-
     public AttachmentReference[] ColorAttachmentReferences
     {
         get;
         private set;
-    }
+    } = colorAttachmentReferences;
 
-    public PipelineBindPoint BindPoint { get; private set; }
+    public PipelineBindPoint BindPoint { get; private set; } = bindPoint;
 }
