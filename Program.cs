@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Text;
 using Autofac;
 using Silk.NET.Core.Native;
 using Silk.NET.Windowing;
@@ -209,6 +208,7 @@ internal class Program
         var particleSystem = container.Resolve<IParticleSystem>();
         if (config.Poincare != null)
         {
+            using var progressBar = new ProgressBar(50);
             using (var stream =
                    new StreamWriter("result.dat", false))
             {
@@ -226,24 +226,7 @@ internal class Program
                         stream.Write(
                             $"{instance.position.X} {instance.position.Y}\n");
 
-                    var blocksCount = 50;
-                    var progressBlockCount = (int)Math.Floor(i *
-                        blocksCount /
-                        (double)config.Poincare.Periods);
-                    var animation = @"|/-\";
-                    string text = string.Format("[{0}{1}] {2,3}% {3}",
-                        new string('#',
-                            progressBlockCount),
-                        new string('-',
-                            blocksCount - progressBlockCount),
-                        Math.Floor(100 * i /
-                                   (double)config.Poincare.Periods),
-                        animation[
-                            i % animation.Length]);
-                    var stringBuilder = new StringBuilder();
-                    stringBuilder.Append('\b', text.Length);
-                    stringBuilder.Append(text);
-                    Console.Write(stringBuilder);
+                    progressBar.Update(i/(float)config.Poincare.Periods);
                 }
             }
         }
