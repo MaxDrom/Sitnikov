@@ -77,7 +77,6 @@ public class ParticleSystemGpu : IParticleSystem
         _stagingAllocator = stagingAllocator;
         _fence = new VkFence(_ctx, _device);
         _copyFence = new VkFence(_ctx, _device);
-        //_dataOnCpu = new Instance[initialData.Length];
         _e = config.e;
         _n = initialData.Length;
 

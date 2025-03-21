@@ -234,8 +234,10 @@ internal class Program
                     string text = string.Format("[{0}{1}] {2,3}% {3}",
                         new string('#',
                             progressBlockCount),
-                        new string('-', blocksCount - progressBlockCount),
-                        Math.Floor(100*i/(double)config.Poincare.Periods),
+                        new string('-',
+                            blocksCount - progressBlockCount),
+                        Math.Floor(100 * i /
+                                   (double)config.Poincare.Periods),
                         animation[
                             i % animation.Length]);
                     var stringBuilder = new StringBuilder();
@@ -320,7 +322,8 @@ internal class Program
         builder.RegisterInstance(ctx).SingleInstance();
         builder.RegisterInstance(new VkDevice(ctx,
             physicalDevice, [],
-            [KhrSwapchain.ExtensionName])).SingleInstance();
+            [KhrSwapchain.ExtensionName]))
+            .SingleInstance();
 
 
         builder.RegisterType<StupidAllocator>().As<VkAllocator>()
@@ -331,6 +334,7 @@ internal class Program
             .WithMetadata("Type", "DeviceLocal")
             .SingleInstance();
 
+
         builder.RegisterType<StupidAllocator>().As<VkAllocator>()
             .WithParameter("requiredProperties",
                 MemoryPropertyFlags.HostVisibleBit |
@@ -339,6 +343,7 @@ internal class Program
                 MemoryHeapFlags.None)
             .WithMetadata("Type", "HostVisible")
             .SingleInstance();
+
 
         builder.RegisterType<GameWindow>().AsSelf().SingleInstance();
     }
