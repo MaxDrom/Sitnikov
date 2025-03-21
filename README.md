@@ -52,3 +52,4 @@ Poincare: ---# Poincare map parameters (optional, if not specified,
                 the phase portrait visualization will not be run)
     Periods: 100 ---# Number of iteration
 ```
+![image](plot.png)
