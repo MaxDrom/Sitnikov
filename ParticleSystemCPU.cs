@@ -9,7 +9,8 @@ namespace Sitnikov;
 
 public sealed class ParticleSystemCpu : IParticleSystem
 {
-    private readonly Instance[] _data;
+    private Instance[] _data;
+    private Instance[] _data2;
 
     private readonly SymplecticIntegrator<double, Vector<double>>
         _integrator;
@@ -22,7 +23,9 @@ public sealed class ParticleSystemCpu : IParticleSystem
         SymplecticIntegrator<double, Vector<double>> integrator)
     {
         _data = new Instance[initialData.Length];
+        _data2 = new Instance[initialData.Length];
         Array.Copy(initialData, _data, initialData.Length);
+        Array.Copy(initialData, _data2, initialData.Length);
         _integrator = integrator;
         _buffer = new VkBuffer<Instance>(_data.Length,
             BufferUsageFlags.TransferSrcBit, SharingMode.Exclusive,
@@ -39,7 +42,7 @@ public sealed class ParticleSystemCpu : IParticleSystem
         }
     }
 
-    public IEnumerable<Instance> DataOnCpu => _data;
+    public IEnumerable<Instance> DataOnCpu => _data2;
 
     private VkBuffer<Instance> _buffer;
 
@@ -61,7 +64,9 @@ public sealed class ParticleSystemCpu : IParticleSystem
                 _data[number].offset = newPosition - pos;
             }));
         }
-
+        var tmp = _data;
+        _data2 = _data;
+        _data = tmp;
         await Task.WhenAll(taskList);
     }
 

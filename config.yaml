@@ -1,6 +1,6 @@
 e: 0.12
-SizeX: 600
-SizeY: 600
+SizeX: 512
+SizeY: 512
 RangeX:
   Item1: -2.5
   Item2: 2.5
@@ -10,6 +10,9 @@ RangeY:
 Integrator:
   Order: 8
   Timestep: 0.01
+
+Poincare:
+  Periods: 1000
 
 Visualization:
   OnGPU: true

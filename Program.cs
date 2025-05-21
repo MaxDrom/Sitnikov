@@ -216,19 +216,25 @@ internal class Program
             using (var stream =
                    new StreamWriter("result.dat", false))
             {
+                Task readTask = Task.CompletedTask;
                 for (int i = 1; i <= config.Poincare.Periods; i++)
                 {
+                    
                     double T = 0;
                     while (T < 2 * Math.PI)
                     {
                         await particleSystem.Update(delta: Dt, T);
                         T += Dt;
                     }
-
-                    foreach (var instance in particleSystem
-                                 .DataOnCpu)
-                        stream.Write(
-                            $"{instance.position.X} {instance.position.Y}\n");
+                    await readTask;
+                    var dataOnCpu = particleSystem
+                                 .DataOnCpu;
+                    readTask = Task.Run(() =>
+                    {
+                        foreach (var instance in dataOnCpu)
+                            stream.Write(
+                                $"{instance.position.X} {instance.position.Y}\n");
+                    });
 
                     progressBar.Update(i / (float)config.Poincare.Periods);
                 }
