@@ -296,15 +296,15 @@ public sealed partial class GameWindow
                 _imageAvailableSemaphores[_frameIndex],
                 out _imageIndex) == Result.ErrorOutOfDateKhr)
             return;
-
+        
         _fences[_frameIndex].Reset();
         _buffers[_imageIndex].Submit(_device.GraphicsQueue,
             _fences[_frameIndex],
             [_imageAvailableSemaphores[_frameIndex]],
-            [_renderFinishedSemaphores[_frameIndex]]);
+            [_renderFinishedSemaphores[_imageIndex]]);
         _swapchainCtx.QueuePresent(_device.PresentQueue,
             [_imageIndex],
-            [_swapchain], [_renderFinishedSemaphores[_frameIndex]]);
+            [_swapchain], [_renderFinishedSemaphores[_imageIndex]]);
         _frameIndex = ++_frameIndex % FramesInFlight;
     }
 }

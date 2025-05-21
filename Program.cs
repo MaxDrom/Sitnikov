@@ -11,6 +11,8 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Sitnikov.BoidsVulkan;
 using Sitnikov.BoidsVulkan.VkAllocatorSystem;
+using Autofac.Features.AttributeFilters;
+using Autofac.Integration.Mef;
 
 namespace Sitnikov;
 
@@ -161,21 +163,21 @@ internal class Program
         var dx = (float)(config.RangeX.Item2 - config.RangeX.Item1);
         var dy = (float)(config.RangeY.Item2 - config.RangeY.Item1);
         for (var xx = 0; xx < gridX; xx++)
-        for (var yy = 0; yy < gridY; yy++)
-        {
-            instances[xx + yy * gridX] = new Instance
+            for (var yy = 0; yy < gridY; yy++)
             {
-                position = new Vector2D<float>(
-                    (float)config.RangeX.Item1 +
-                    xx / (gridX - 1f) * dx,
-                    (float)config.RangeY.Item1 +
-                    yy / (gridY - 1f) * dy),
-                color =
-                    new Vector4D<float>(xx / (gridX - 1f),
-                        yy / (gridY - 1f), 1f, 1f),
-                offset = new Vector2D<float>(0, 0),
-            };
-        }
+                instances[xx + yy * gridX] = new Instance
+                {
+                    position = new Vector2D<float>(
+                        (float)config.RangeX.Item1 +
+                        xx / (gridX - 1f) * dx,
+                        (float)config.RangeY.Item1 +
+                        yy / (gridY - 1f) * dy),
+                    color =
+                        new Vector4D<float>(xx / (gridX - 1f),
+                            yy / (gridY - 1f), 1f, 1f),
+                    offset = new Vector2D<float>(0, 0),
+                };
+            }
 
         var builder = new ContainerBuilder();
         builder.RegisterInstance(config).SingleInstance();
@@ -196,12 +198,14 @@ internal class Program
             builder.RegisterType<ParticleSystemGpu>()
                 .As<IParticleSystem>()
                 .WithParameter("initialData",
-                    instances).SingleInstance();
+                    instances).WithAttributeFiltering()
+                .SingleInstance();
         else
             builder.RegisterType<ParticleSystemCpu>()
                 .As<IParticleSystem>()
                 .WithParameter("initialData",
-                    instances).SingleInstance();
+                    instances).WithAttributeFiltering()
+                .SingleInstance();
 
         InitVulkan(builder, window, windowOptions);
         var container = builder.Build();
@@ -226,7 +230,7 @@ internal class Program
                         stream.Write(
                             $"{instance.position.X} {instance.position.Y}\n");
 
-                    progressBar.Update(i/(float)config.Poincare.Periods);
+                    progressBar.Update(i / (float)config.Poincare.Periods);
                 }
             }
         }
@@ -258,6 +262,8 @@ internal class Program
             SilkMarshal.CopyPtrToStringArray((nint)pp, extensions);
         }
 
+        builder.RegisterInstance(window).SingleInstance();
+
         var ctx
             = new VkContext(window, extensions);
         var physicalDevice = ctx.Api
@@ -285,15 +291,17 @@ internal class Program
             foreach (var formatCap in formats)
                 if (formatCap.Format == Format.R16G16B16A16Sfloat)
                 {
+                    format = formatCap.Format;
                     colorSpace = formatCap.ColorSpace;
                     break;
                 }
 
             builder.RegisterInstance(
-                    new DisplayFormat()
+                    new DisplayFormat
                     {
-                        Format = format, ColorSpace = colorSpace,
-                        WindowOptions = windowOptions
+                        Format = format,
+                        ColorSpace = colorSpace,
+                        WindowOptions = windowOptions,
                     })
                 .SingleInstance();
         }
@@ -301,33 +309,35 @@ internal class Program
 
         Console.WriteLine(deviceName);
 
-        builder.RegisterInstance(window).SingleInstance();
         builder.RegisterInstance(ctx).SingleInstance();
-        builder.RegisterInstance(new VkDevice(ctx,
-            physicalDevice, [],
-            [KhrSwapchain.ExtensionName]))
+        builder.RegisterType<VkDevice>().AsSelf()
+            .WithParameter("physicalDevice", physicalDevice)
+            .WithParameter("enabledLayersNames", new List<string>())
+            .WithParameter("enabledExtensionsNames",
+                new List<string>
+                {
+                    KhrSwapchain.ExtensionName,
+                })
             .SingleInstance();
 
 
         builder.RegisterType<StupidAllocator>().As<VkAllocator>()
+            .WithMetadata("Type", "DeviceLocal")
             .WithParameter("requiredProperties",
                 MemoryPropertyFlags.None)
             .WithParameter("preferredFlags",
-                MemoryHeapFlags.DeviceLocalBit)
-            .WithMetadata("Type", "DeviceLocal")
-            .SingleInstance();
-
+                MemoryHeapFlags.DeviceLocalBit).SingleInstance();
 
         builder.RegisterType<StupidAllocator>().As<VkAllocator>()
+            .WithMetadata("Type", "HostVisible")
             .WithParameter("requiredProperties",
                 MemoryPropertyFlags.HostVisibleBit |
                 MemoryPropertyFlags.HostCoherentBit)
             .WithParameter("preferredFlags",
-                MemoryHeapFlags.None)
-            .WithMetadata("Type", "HostVisible")
-            .SingleInstance();
+                MemoryHeapFlags.None).SingleInstance();
+        builder.RegisterMetadataRegistrationSources();
 
-
-        builder.RegisterType<GameWindow>().AsSelf().SingleInstance();
+        builder.RegisterType<GameWindow>().WithAttributeFiltering()
+            .AsSelf().SingleInstance();
     }
 }

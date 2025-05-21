@@ -11,9 +11,6 @@ Integrator:
   Order: 8
   Timestep: 0.01
 
-Poincare:
-  Periods: 1000
-
 Visualization:
   OnGPU: true
   Fade: 10

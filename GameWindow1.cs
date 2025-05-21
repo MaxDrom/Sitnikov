@@ -63,34 +63,34 @@ public sealed partial class GameWindow : IDisposable
 
     public GameWindow(
         VkContext ctx, VkDevice device,
-        DisplayFormat displayFormat, 
+        DisplayFormat displayFormat,
         [MetadataFilter("Type", "DeviceLocal")] VkAllocator allocator,
         [MetadataFilter("Type", "HostVisible")] VkAllocator stagingAllocator,
         IParticleSystem particleSystem,
         SitnikovConfig config,
         IWindow window)
     {
-        _ctx =ctx;
+        _ctx = ctx;
         _device = device;
         _format = displayFormat.Format;
         _colorSpace = displayFormat.ColorSpace;
         _allocator = allocator;
         _stagingAllocator = stagingAllocator;
         _particleSystem = particleSystem;
-        _config =  config;
+        _config = config;
         _windowOptions = displayFormat.WindowOptions;
         _window = window;
         _swapchainCtx = new VkSwapchainContext(_ctx, _device);
         _commandPool = new VkCommandPool(_ctx, _device,
             CommandPoolCreateFlags.ResetCommandBufferBit,
             _device.GraphicsFamilyIndex);
-        
+
         _commandPoolTransfer = new VkCommandPool(_ctx, _device,
             CommandPoolCreateFlags.ResetCommandBufferBit,
             _device.GraphicsFamilyIndex);
         CreateSwapchain();
         CreateViews();
-        
+
         _vertexBuffer = new VkBuffer<Vertex>(_vertices.Length,
             BufferUsageFlags.VertexBufferBit |
             BufferUsageFlags.TransferDstBit, SharingMode.Exclusive,
@@ -99,7 +99,7 @@ public sealed partial class GameWindow : IDisposable
             BufferUsageFlags.IndexBufferBit |
             BufferUsageFlags.TransferDstBit, SharingMode.Exclusive,
             _allocator);
-        
+
 
         var subPass = new VkSubpassInfo(PipelineBindPoint.Graphics, [
             new AttachmentReference
@@ -140,8 +140,8 @@ public sealed partial class GameWindow : IDisposable
 
         CreateFrameBuffers();
 
-        
-        
+
+
         _copyBuffer = _commandPoolTransfer
             .AllocateBuffers(CommandBufferLevel.Primary, 1).First();
         _instanceBuffer = new VkBuffer<Instance>(_particleSystem.Buffer.Size,
@@ -160,7 +160,7 @@ public sealed partial class GameWindow : IDisposable
         CopyDataToBuffer(_quadVertices, _quadVertexBuffer);
         CopyDataToBuffer(_vertices, _vertexBuffer);
         CopyDataToBuffer(_indices, _indexBuffer);
-        
+
 
         _buffers =
             _commandPool.AllocateBuffers(CommandBufferLevel.Primary,
@@ -171,7 +171,7 @@ public sealed partial class GameWindow : IDisposable
 
         _fences = new VkFence[FramesInFlight];
         _imageAvailableSemaphores = new VkSemaphore[FramesInFlight];
-        _renderFinishedSemaphores = new VkSemaphore[FramesInFlight];
+        _renderFinishedSemaphores = new VkSemaphore[_swapchain.Images.Length];
         _copyFence = new VkFence(_ctx, _device);
         _copyFinishedSemaphore = new VkSemaphore(_ctx, _device);
         for (var i = 0; i < FramesInFlight; i++)
@@ -183,12 +183,16 @@ public sealed partial class GameWindow : IDisposable
                     Flag = PipelineStageFlags
                         .ColorAttachmentOutputBit,
                 };
+        }
+
+        for (var i = 0; i < _swapchain.Images.Length; i++)
+        {
             _renderFinishedSemaphores[i] =
                 new VkSemaphore(_ctx, _device);
         }
 
 
-        
+
         _frameIndex = 0;
         _totalFrameTime = 0d;
         _fps = 0;
